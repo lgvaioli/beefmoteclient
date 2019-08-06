@@ -41,7 +41,7 @@ public class MainActivity extends AppCompatActivity {
         private final WeakReference<MainActivity> mainActivity;
 
         UiHandler(MainActivity mainAct) {
-            this.mainActivity = new WeakReference<MainActivity>(mainAct);
+            this.mainActivity = new WeakReference<>(mainAct);
         }
 
         @Override
@@ -49,7 +49,7 @@ public class MainActivity extends AppCompatActivity {
             MainActivity mainAct = mainActivity.get();
 
             if(mainAct != null) {
-                // Got data from server; append to server output textview
+                // Got data from server; append to server output TextView
                 if(msg.what == NEW_DATA_FROM_SERVER) {
                     Bundle bundle = msg.getData();
                     String str = bundle.getString(NEW_DATA_FROM_SERVER_STR);
