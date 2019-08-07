@@ -4,16 +4,19 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Track {
-    private String trackAddr = null;
-    private String artist = null;
-    private String album = null;
-    private String trackNum = null;
-    private String title = null;
-    private String duration = null;
+    private String trackAddr;
+    private String artist;
+    private String album;
+    private String trackNum;
+    private String title;
+    private String duration;
+    private String originalString;
 
     // Creates a Track from a String with Beefmote track format:
     // trackAddr [artist - album] trackNum - title (duration)
     Track(String beefmoteTrack) {
+        originalString = beefmoteTrack;
+
         // Is there anything on this Earth more unreadable than a regex?
         String patternStr = "\\((.*?)\\) (.*?) \\[(.*?) - (.*?)\\] (.*?) - (.*?) \\((\\d+:\\d+)\\)";
         Pattern pattern = Pattern.compile(patternStr);
@@ -76,4 +79,6 @@ public class Track {
     public void setDuration(String duration) {
         this.duration = duration;
     }
+
+    public String toString() { return originalString; }
 }
