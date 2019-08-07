@@ -3,6 +3,7 @@ package com.example.BeefmoteClient;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.widget.Toast;
 
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -48,6 +49,13 @@ public class UiHandler extends Handler {
             DividerItemDecoration dividerItemDecoration = new DividerItemDecoration(recyclerView.getContext(),
                     layoutManager.getOrientation());
             recyclerView.addItemDecoration(dividerItemDecoration);
+        }
+
+        if(msg.what == BeefmoteServer.MESSAGE_NOW_PLAYING) {
+            Bundle bundle = msg.getData();
+            String str = bundle.getString(BeefmoteServer.SERVER_DATA);
+            Toast.makeText(mainActivity, str, Toast.LENGTH_SHORT).show();
+            System.out.println("[HANDLER] " + str);
         }
     }
 }

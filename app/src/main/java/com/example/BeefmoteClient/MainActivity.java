@@ -53,8 +53,55 @@ public class MainActivity extends AppCompatActivity implements PlaylistRecyclerV
         String message = editText.getText().toString();
 
         if (message.equals("tla")) {
-
             beefmoteServer.getTracklist();
+        }
+
+        if (message.equals("r")) {
+            beefmoteServer.playRandom();
+        }
+
+        if (message.equals("p")) {
+            beefmoteServer.playResume();
+        }
+
+        if (message.equals("sac")) {
+            beefmoteServer.setStopAfterCurrent(true);
+        }
+
+        if (message.equals("s")) {
+            beefmoteServer.stop();
+        }
+
+        if (message.equals("pv")) {
+            beefmoteServer.previous();
+        }
+
+        if (message.equals("nt")) {
+            beefmoteServer.next();
+        }
+
+        if (message.equals("vu")) {
+            beefmoteServer.volumeUp();
+        }
+
+        if (message.equals("vd")) {
+            beefmoteServer.volumeDown();
+        }
+
+        if (message.equals("sf")) {
+            beefmoteServer.seekForward();
+        }
+
+        if (message.equals("sb")) {
+            beefmoteServer.seekBackward();
+        }
+
+        if (message.equals("nowplayON")) {
+            beefmoteServer.setNotifyNowPlaying(true);
+        }
+
+        if (message.equals("nowplayOFF")) {
+            beefmoteServer.setNotifyNowPlaying(false);
         }
     }
 

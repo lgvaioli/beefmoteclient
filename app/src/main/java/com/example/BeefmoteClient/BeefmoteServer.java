@@ -21,28 +21,72 @@ public class BeefmoteServer {
     private String serverIp;
     private int serverPort;
     private ArrayList<String> buffer;
+    private boolean stopAfterCurrent;
+    private boolean notifyNowPlaying;
+    private Thread NowPlayingThread;
 
     // Beefmote commands
     private static final String BEEFMOTE_TRACKLIST = "tla";
     private static final String BEEFMOTE_PLAYTRACK = "pa";
+    private static final String BEEFMOTE_RANDOM = "r";
+    private static final String BEEFMOTE_PLAY_RESUME = "p";
+    private static final String BEEFMOTE_STOP_AFTER_CURRENT = "sac";
+    private static final String BEEFMOTE_STOP = "s";
+    private static final String BEEFMOTE_PREVIOUS = "pv";
+    private static final String BEEFMOTE_NEXT = "nt";
+    private static final String BEEFMOTE_VOLUME_UP = "vu";
+    private static final String BEEFMOTE_VOLUME_DOWN = "vd";
+    private static final String BEEFMOTE_SEEK_FORWARD = "sf";
+    private static final String BEEFMOTE_SEEK_BACKWARD = "sb";
+    private static final String BEEFMOTE_NOTIFY_NOW_PLAYING = "ntfy-nowplaying";
 
     // Beefmote messages (for communication with the UiHandler)
-    public static final int MESSAGE_TRACKLIST_READY = 0;
-    public static final int MESSAGE_PLAYLISTS_READY = 1;
-    public static final int MESSAGE_CURRENT_PLAYLIST_READY = 2;
-    public static final int MESSAGE_SEARCH_READY = 3;
+    static final int MESSAGE_TRACKLIST_READY = 0;
+    static final int MESSAGE_PLAYLISTS_READY = 1;
+    static final int MESSAGE_CURRENT_PLAYLIST_READY = 2;
+    static final int MESSAGE_SEARCH_READY = 3;
+    static final int MESSAGE_NOW_PLAYING = 4;
 
     // Dummy string for storing/extracting data from a Bundle (UiHandler communication stuff)
-    public static final String SERVER_DATA = "SERVER_DATA";
+    static final String SERVER_DATA = "SERVER_DATA";
 
     BeefmoteServer(String serverIp, int serverPort, UiHandler uiHandler) {
         this.serverIp = serverIp;
         this.serverPort = serverPort;
         this.uiHandler = uiHandler;
         buffer = new ArrayList<>();
+        stopAfterCurrent = false;
+        notifyNowPlaying = false;
+        NowPlayingThread = null;
     }
 
-    public void connect() {
+    // Helper function for sending Beefmote commands (cuts down the Thread'ing boilerplate)
+    private void sendCommand(final String beefmoteCommand) {
+        new Thread() {
+            public void run() {
+                // Send playTrack command to Beefmote
+                try {
+                    PrintWriter out = new PrintWriter(new BufferedWriter(
+                            new OutputStreamWriter(socket.getOutputStream())),
+                            true);
+                    out.println(beefmoteCommand);
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                }
+            }
+        }.start();
+    }
+
+    public boolean getStopAfterCurrent() {
+        return stopAfterCurrent;
+    }
+
+    public void setStopAfterCurrent(boolean stopAfterCurrent) {
+        this.stopAfterCurrent = stopAfterCurrent;
+        sendCommand(BEEFMOTE_STOP_AFTER_CURRENT);
+    }
+
+    void connect() {
         new Thread() {
             public void run() {
                 try {
@@ -64,7 +108,7 @@ public class BeefmoteServer {
         }.start();
     }
 
-    public void disconnect() {
+    void disconnect() {
         new Thread() {
             public void run() {
                 try {
@@ -76,7 +120,7 @@ public class BeefmoteServer {
         }.start();
     }
 
-    public void getTracklist() {
+    void getTracklist() {
         new Thread() {
             public void run() {
                 // Send tracklist command to Beefmote
@@ -132,19 +176,114 @@ public class BeefmoteServer {
         }.start();
     }
 
-    public void playTrack(final Track track) {
-        new Thread() {
+    void playTrack(final Track track) {
+        sendCommand(BEEFMOTE_PLAYTRACK + " " + track.getTrackAddr());
+    }
+
+    void playRandom() {
+        sendCommand(BEEFMOTE_RANDOM);
+    }
+
+    void playResume() {
+        sendCommand(BEEFMOTE_PLAY_RESUME);
+    }
+
+    void stop() {
+        sendCommand(BEEFMOTE_STOP);
+    }
+
+    void previous() {
+        sendCommand(BEEFMOTE_PREVIOUS);
+    }
+
+    void next() {
+        sendCommand(BEEFMOTE_NEXT);
+    }
+
+    void volumeUp() {
+        sendCommand(BEEFMOTE_VOLUME_UP);
+    }
+
+    void volumeDown() {
+        sendCommand(BEEFMOTE_VOLUME_DOWN);
+    }
+
+    void seekForward() {
+        sendCommand(BEEFMOTE_SEEK_FORWARD);
+    }
+
+    void seekBackward() {
+        sendCommand(BEEFMOTE_SEEK_BACKWARD);
+    }
+
+    void setNotifyNowPlaying(final boolean notifyNowPlaying) {
+        this.notifyNowPlaying = notifyNowPlaying;
+
+        if (notifyNowPlaying && NowPlayingThread != null) {
+            System.out.println("Notification true and thread running, returning");
+            return;
+        }
+
+        NowPlayingThread = new Thread() {
             public void run() {
-                // Send playTrack command to Beefmote
+                String boolStr;
+
+                if (notifyNowPlaying) {
+                    boolStr = "true";
+                }
+                else {
+                    boolStr = "false";
+                }
+
+                // Send notifyNowPlaying command to Beefmote
                 try {
                     PrintWriter out = new PrintWriter(new BufferedWriter(
                             new OutputStreamWriter(socket.getOutputStream())),
                             true);
-                    out.println(BEEFMOTE_PLAYTRACK + " " + track.getTrackAddr());
+                    out.println(BEEFMOTE_NOTIFY_NOW_PLAYING + " " + boolStr);
                 } catch (IOException e1) {
                     e1.printStackTrace();
                 }
+
+                if (!notifyNowPlaying) {
+                    System.out.println("Returning from Thread's run()");
+                    return;
+                }
+
+                // ... and get results
+                String inputLine = null;
+
+                while(true) {
+                    try {
+                        if ((inputLine = bufferedReader.readLine()) == null) {
+                            break;
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+
+                    if (inputLine.startsWith("Now playing")) {
+                        // Send buffer and clear it
+                        Message msg = new Message();
+                        Bundle bundle = new Bundle();
+                        bundle.putString(SERVER_DATA, inputLine);
+                        msg.setData(bundle);
+                        msg.what = MESSAGE_NOW_PLAYING;
+                        uiHandler.sendMessage(msg);
+                    }
+                }
             }
-        }.start();
+        };
+        NowPlayingThread.start();
+
+        if (!notifyNowPlaying && NowPlayingThread != null) {
+            System.out.println("Notification false and thread running, interrupting thread");
+            NowPlayingThread.interrupt();
+            NowPlayingThread = null;
+        }
+    }
+
+    boolean getNotifyNowPlaying() {
+        return notifyNowPlaying;
     }
 }
