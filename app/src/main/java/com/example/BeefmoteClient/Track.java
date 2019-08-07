@@ -80,5 +80,7 @@ public class Track {
         this.duration = duration;
     }
 
-    public String toString() { return originalString; }
+    public String toString() {
+        return artist + " - " + album + " - " + trackNum + " - " + title + " (" + duration + ")";
+    }
 }

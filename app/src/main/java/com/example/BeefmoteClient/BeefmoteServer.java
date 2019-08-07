@@ -21,11 +21,18 @@ public class BeefmoteServer {
     private String serverIp;
     private int serverPort;
     private ArrayList<String> buffer;
+
+    // Beefmote commands
     private static final String BEEFMOTE_TRACKLIST = "tla";
+    private static final String BEEFMOTE_PLAYTRACK = "pa";
+
+    // Beefmote messages (for communication with the UiHandler)
     public static final int MESSAGE_TRACKLIST_READY = 0;
     public static final int MESSAGE_PLAYLISTS_READY = 1;
     public static final int MESSAGE_CURRENT_PLAYLIST_READY = 2;
     public static final int MESSAGE_SEARCH_READY = 3;
+
+    // Dummy string for storing/extracting data from a Bundle (UiHandler communication stuff)
     public static final String SERVER_DATA = "SERVER_DATA";
 
     BeefmoteServer(String serverIp, int serverPort, UiHandler uiHandler) {
@@ -120,6 +127,22 @@ public class BeefmoteServer {
                     if (receivingTracklist) {
                         buffer.add(inputLine);
                     }
+                }
+            }
+        }.start();
+    }
+
+    public void playTrack(final Track track) {
+        new Thread() {
+            public void run() {
+                // Send playTrack command to Beefmote
+                try {
+                    PrintWriter out = new PrintWriter(new BufferedWriter(
+                            new OutputStreamWriter(socket.getOutputStream())),
+                            true);
+                    out.println(BEEFMOTE_PLAYTRACK + " " + track.getTrackAddr());
+                } catch (IOException e1) {
+                    e1.printStackTrace();
                 }
             }
         }.start();

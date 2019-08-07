@@ -7,23 +7,16 @@ import android.text.method.ScrollingMovementMethod;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements PlaylistRecyclerViewAdapter.ItemClickListener{
     private BeefmoteServer beefmoteServer;
+    private UiHandler uiHandler;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        // Make text view scrollable.
-        TextView serverOutput = findViewById(R.id.textView_serverOutput);
-        serverOutput.setMovementMethod(new ScrollingMovementMethod());
-    }
-
-    public void appendTextToServerOutput(String text) {
-        TextView serverOutput = findViewById(R.id.textView_serverOutput);
-        serverOutput.append("\n" + text);
     }
 
     // Called when the user taps the Connect button
@@ -44,7 +37,8 @@ public class MainActivity extends AppCompatActivity {
             serverPort = Integer.parseInt(serverPortStr);
         }
 
-        beefmoteServer = new BeefmoteServer(serverIpStr, serverPort, new UiHandler(this));
+        uiHandler = new UiHandler(this);
+        beefmoteServer = new BeefmoteServer(serverIpStr, serverPort, uiHandler);
         beefmoteServer.connect();
     }
 
@@ -59,7 +53,20 @@ public class MainActivity extends AppCompatActivity {
         String message = editText.getText().toString();
 
         if (message.equals("tla")) {
+
             beefmoteServer.getTracklist();
         }
+    }
+
+    // Called when the user clicks a track
+    @Override
+    public void onItemClick(View view, int position) {
+        /*Toast.makeText(this, "You clicked " +
+                        uiHandler.getPlaylistAdapter().getItem(position) +
+                        " on row number " +
+                        position, Toast.LENGTH_SHORT).show();*/
+        Track track = uiHandler.getPlaylistAdapter().getItem(position);
+        beefmoteServer.playTrack(track);
+        Toast.makeText(this, "Playing " + track.getTitle(), Toast.LENGTH_SHORT).show();
     }
 }
