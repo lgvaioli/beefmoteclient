@@ -1,6 +1,7 @@
 package com.example.BeefmoteClient;
 
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.Message;
 
 import java.io.BufferedReader;
@@ -17,7 +18,6 @@ import java.util.ArrayList;
 public class BeefmoteServer {
     private Socket socket;
     private BufferedReader bufferedReader;
-    private UiHandler uiHandler;
     private String serverIp;
     private int serverPort;
     private ArrayList<String> buffer;
@@ -39,21 +39,21 @@ public class BeefmoteServer {
     private static final String BEEFMOTE_SEEK_FORWARD = "sf";
     private static final String BEEFMOTE_SEEK_BACKWARD = "sb";
     private static final String BEEFMOTE_NOTIFY_NOW_PLAYING = "ntfy-nowplaying";
+    private static final String BEEFMOTE_EXIT = "exit";
 
-    // Beefmote messages (for communication with the UiHandler)
+    // Beefmote messages (for communication with the PlaylistUiHandler)
     static final int MESSAGE_TRACKLIST_READY = 0;
     static final int MESSAGE_PLAYLISTS_READY = 1;
     static final int MESSAGE_CURRENT_PLAYLIST_READY = 2;
     static final int MESSAGE_SEARCH_READY = 3;
     static final int MESSAGE_NOW_PLAYING = 4;
 
-    // Dummy string for storing/extracting data from a Bundle (UiHandler communication stuff)
+    // Dummy string for storing/extracting data from a Bundle (PlaylistUiHandler communication stuff)
     static final String SERVER_DATA = "SERVER_DATA";
 
-    BeefmoteServer(String serverIp, int serverPort, UiHandler uiHandler) {
+    BeefmoteServer(String serverIp, int serverPort) {
         this.serverIp = serverIp;
         this.serverPort = serverPort;
-        this.uiHandler = uiHandler;
         buffer = new ArrayList<>();
         stopAfterCurrent = false;
         notifyNowPlaying = false;
@@ -86,8 +86,10 @@ public class BeefmoteServer {
         sendCommand(BEEFMOTE_STOP_AFTER_CURRENT);
     }
 
+    // Connects to the Beefmote server. This function is blocking, i.e. it won't return
+    // until the connection is established.
     void connect() {
-        new Thread() {
+        Thread thread = new Thread() {
             public void run() {
                 try {
                     InetAddress serverAddress = InetAddress.getByName(serverIp);
@@ -105,7 +107,15 @@ public class BeefmoteServer {
                 }
 
             }
-        }.start();
+        };
+
+        thread.start();
+
+        try {
+            thread.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     void disconnect() {
@@ -120,7 +130,7 @@ public class BeefmoteServer {
         }.start();
     }
 
-    void getTracklist() {
+    void getTracklist(final Handler uiHandler) {
         new Thread() {
             public void run() {
                 // Send tracklist command to Beefmote
@@ -216,7 +226,7 @@ public class BeefmoteServer {
         sendCommand(BEEFMOTE_SEEK_BACKWARD);
     }
 
-    void setNotifyNowPlaying(final boolean notifyNowPlaying) {
+    void setNotifyNowPlaying(final boolean notifyNowPlaying, final Handler uiHandler) {
         this.notifyNowPlaying = notifyNowPlaying;
 
         if (notifyNowPlaying && NowPlayingThread != null) {
@@ -285,5 +295,9 @@ public class BeefmoteServer {
 
     boolean getNotifyNowPlaying() {
         return notifyNowPlaying;
+    }
+
+    void exit() {
+        sendCommand(BEEFMOTE_EXIT);
     }
 }

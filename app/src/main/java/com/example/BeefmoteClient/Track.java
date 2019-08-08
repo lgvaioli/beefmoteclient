@@ -81,6 +81,6 @@ public class Track {
     }
 
     public String toString() {
-        return artist + " - " + album + " - " + trackNum + " - " + title + " (" + duration + ")";
+        return artist + " - " + title;
     }
 }

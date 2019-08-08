@@ -2,16 +2,14 @@ package com.example.BeefmoteClient;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.Intent;
 import android.os.Bundle;
-import android.text.method.ScrollingMovementMethod;
 import android.view.View;
 import android.widget.EditText;
-import android.widget.TextView;
-import android.widget.Toast;
 
-public class MainActivity extends AppCompatActivity implements PlaylistRecyclerViewAdapter.ItemClickListener{
-    private BeefmoteServer beefmoteServer;
-    private UiHandler uiHandler;
+public class MainActivity extends AppCompatActivity {
+    public static final String SERVER_IP = "SERVER_IP";
+    public static final String SERVER_PORT = "SERVER_PORT";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -21,99 +19,19 @@ public class MainActivity extends AppCompatActivity implements PlaylistRecyclerV
 
     // Called when the user taps the Connect button
     public void connect(View view) {
+        Intent intent = new Intent(this, PlaylistActivity.class);
+
+        // Get server IP and port from the main layout TextViews
         EditText editText_serverIp = findViewById(R.id.editText_serverIP);
         String serverIpStr = editText_serverIp.getText().toString();
-        if (serverIpStr.equals("Server IP")) {
-            serverIpStr = "192.168.0.2";
-        }
 
         EditText editText_serverPort = findViewById(R.id.editText_serverPort);
         String serverPortStr = editText_serverPort.getText().toString();
-        int serverPort;
-        if (serverPortStr.equals("Server Port")) {
-            serverPort = 49160;
-        }
-        else {
-            serverPort = Integer.parseInt(serverPortStr);
-        }
 
-        uiHandler = new UiHandler(this);
-        beefmoteServer = new BeefmoteServer(serverIpStr, serverPort, uiHandler);
-        beefmoteServer.connect();
-    }
+        // Pack server IP and port strings into the Intent
+        intent.putExtra(SERVER_IP, serverIpStr);
+        intent.putExtra(SERVER_PORT, serverPortStr);
 
-    // Called when the user taps the Disconnect button
-    public void disconnect(View view) {
-        beefmoteServer.disconnect();
-    }
-
-    // Called when the user taps the Send button
-    public void send(View view) {
-        EditText editText = findViewById(R.id.editText_userCommand);
-        String message = editText.getText().toString();
-
-        if (message.equals("tla")) {
-            beefmoteServer.getTracklist();
-        }
-
-        if (message.equals("r")) {
-            beefmoteServer.playRandom();
-        }
-
-        if (message.equals("p")) {
-            beefmoteServer.playResume();
-        }
-
-        if (message.equals("sac")) {
-            beefmoteServer.setStopAfterCurrent(true);
-        }
-
-        if (message.equals("s")) {
-            beefmoteServer.stop();
-        }
-
-        if (message.equals("pv")) {
-            beefmoteServer.previous();
-        }
-
-        if (message.equals("nt")) {
-            beefmoteServer.next();
-        }
-
-        if (message.equals("vu")) {
-            beefmoteServer.volumeUp();
-        }
-
-        if (message.equals("vd")) {
-            beefmoteServer.volumeDown();
-        }
-
-        if (message.equals("sf")) {
-            beefmoteServer.seekForward();
-        }
-
-        if (message.equals("sb")) {
-            beefmoteServer.seekBackward();
-        }
-
-        if (message.equals("nowplayON")) {
-            beefmoteServer.setNotifyNowPlaying(true);
-        }
-
-        if (message.equals("nowplayOFF")) {
-            beefmoteServer.setNotifyNowPlaying(false);
-        }
-    }
-
-    // Called when the user clicks a track
-    @Override
-    public void onItemClick(View view, int position) {
-        /*Toast.makeText(this, "You clicked " +
-                        uiHandler.getPlaylistAdapter().getItem(position) +
-                        " on row number " +
-                        position, Toast.LENGTH_SHORT).show();*/
-        Track track = uiHandler.getPlaylistAdapter().getItem(position);
-        beefmoteServer.playTrack(track);
-        Toast.makeText(this, "Playing " + track.getTitle(), Toast.LENGTH_SHORT).show();
+        startActivity(intent);
     }
 }

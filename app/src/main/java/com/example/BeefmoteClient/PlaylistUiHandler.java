@@ -11,15 +11,14 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
 
-public class UiHandler extends Handler {
-    private MainActivity mainActivity;
+public class PlaylistUiHandler extends Handler {
+    private PlaylistActivity playlistActivity;
     private ArrayList<Track> trackList;
     private PlaylistRecyclerViewAdapter playlistAdapter;
 
-    UiHandler(MainActivity mainActivity) {
-        this.mainActivity = mainActivity;
+    PlaylistUiHandler(PlaylistActivity playlistActivity) {
+        this.playlistActivity = playlistActivity;
         trackList = new ArrayList<>();
-
     }
 
     public PlaylistRecyclerViewAdapter getPlaylistAdapter() {
@@ -37,12 +36,11 @@ public class UiHandler extends Handler {
                 trackList.add(track);
             }
 
-            // FIXME: when this works, move it somewhere else
-            RecyclerView recyclerView = mainActivity.findViewById(R.id.rvPlaylist);
-            LinearLayoutManager layoutManager = new LinearLayoutManager(mainActivity);
+            RecyclerView recyclerView = playlistActivity.findViewById(R.id.rvPlaylist);
+            LinearLayoutManager layoutManager = new LinearLayoutManager(playlistActivity);
             recyclerView.setLayoutManager(layoutManager);
-            playlistAdapter = new PlaylistRecyclerViewAdapter(mainActivity, trackList);
-            playlistAdapter.setClickListener(mainActivity);
+            playlistAdapter = new PlaylistRecyclerViewAdapter(playlistActivity, trackList);
+            playlistAdapter.setClickListener(playlistActivity);
             recyclerView.setAdapter(playlistAdapter);
 
             // add a divider between the rows
@@ -54,7 +52,7 @@ public class UiHandler extends Handler {
         if(msg.what == BeefmoteServer.MESSAGE_NOW_PLAYING) {
             Bundle bundle = msg.getData();
             String str = bundle.getString(BeefmoteServer.SERVER_DATA);
-            Toast.makeText(mainActivity, str, Toast.LENGTH_SHORT).show();
+            Toast.makeText(playlistActivity, str, Toast.LENGTH_SHORT).show();
             System.out.println("[HANDLER] " + str);
         }
     }
