@@ -77,15 +77,12 @@ public class PlaylistActivity extends AppCompatActivity implements PlaylistRecyc
         beefmoteServer = new BeefmoteServer(serverIpStr, serverPort);
         beefmoteServer.connect();
         beefmoteServer.getTracklist(playlistUiHandler);
+        beefmoteServer.setNotifyNowPlaying(true, playlistUiHandler);
     }
 
     // Called when the user clicks a track
     @Override
     public void onItemClick(View view, int position) {
-        /*Toast.makeText(this, "You clicked " +
-                        uiHandler.getPlaylistAdapter().getItem(position) +
-                        " on row number " +
-                        position, Toast.LENGTH_SHORT).show();*/
         Track track = playlistUiHandler.getPlaylistAdapter().getItem(position);
         beefmoteServer.playTrack(track);
     }

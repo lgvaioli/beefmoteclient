@@ -61,6 +61,11 @@ public class BeefmoteServer {
         NowPlayingThread = null;
     }
 
+
+    static public int nowPlayingStrToInt(String nowPlaying) {
+        return Integer.parseInt(nowPlaying.split(" ")[1]);
+    }
+
     // Helper function for sending Beefmote commands (cuts down the Thread'ing boilerplate)
     private void sendCommand(final String beefmoteCommand) {
         new Thread() {
@@ -131,8 +136,9 @@ public class BeefmoteServer {
         }.start();
     }
 
+    // Gets tracklist. Blocking function.
     void getTracklist(final Handler uiHandler) {
-        new Thread() {
+        Thread thread = new Thread() {
             public void run() {
                 // Send tracklist command to Beefmote
                 try {
@@ -157,12 +163,12 @@ public class BeefmoteServer {
                         e.printStackTrace();
                     }
 
-                    if (inputLine.equals("TRACKLIST_BEGIN")) {
+                    if (inputLine.equals("[BEEFMOTE_TRACKLIST_BEGIN]")) {
                         receivingTracklist = true;
                         continue;
                     }
 
-                    if (inputLine.equals("TRACKLIST_END")) {
+                    if (inputLine.equals("[BEEFMOTE_TRACKLIST_END]")) {
                         receivingTracklist = false;
 
                         // Send buffer and clear it
@@ -184,7 +190,15 @@ public class BeefmoteServer {
                     }
                 }
             }
-        }.start();
+        };
+
+        thread.start();
+
+        try {
+            thread.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     void play() {
@@ -277,7 +291,7 @@ public class BeefmoteServer {
                         e.printStackTrace();
                     }
 
-                    if (inputLine.startsWith("Now playing")) {
+                    if (inputLine.startsWith("[BEEFMOTE_NOW_PLAYING]")) {
                         // Send buffer and clear it
                         Message msg = new Message();
                         Bundle bundle = new Bundle();
