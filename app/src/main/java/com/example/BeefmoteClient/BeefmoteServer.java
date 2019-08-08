@@ -27,6 +27,7 @@ public class BeefmoteServer {
 
     // Beefmote commands
     private static final String BEEFMOTE_TRACKLIST = "tla";
+    private static final String BEEFMOTE_PLAY = "pp";
     private static final String BEEFMOTE_PLAYTRACK = "pa";
     private static final String BEEFMOTE_RANDOM = "r";
     private static final String BEEFMOTE_PLAY_RESUME = "p";
@@ -184,6 +185,10 @@ public class BeefmoteServer {
                 }
             }
         }.start();
+    }
+
+    void play() {
+        sendCommand(BEEFMOTE_PLAY);
     }
 
     void playTrack(final Track track) {
