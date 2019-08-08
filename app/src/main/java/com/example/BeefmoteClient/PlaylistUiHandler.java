@@ -5,7 +5,6 @@ import android.os.Handler;
 import android.os.Message;
 import android.widget.Toast;
 
-import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -42,11 +41,6 @@ public class PlaylistUiHandler extends Handler {
             playlistAdapter = new PlaylistRecyclerViewAdapter(playlistActivity, trackList);
             playlistAdapter.setClickListener(playlistActivity);
             recyclerView.setAdapter(playlistAdapter);
-
-            // add a divider between the rows
-            DividerItemDecoration dividerItemDecoration = new DividerItemDecoration(recyclerView.getContext(),
-                    layoutManager.getOrientation());
-            recyclerView.addItemDecoration(dividerItemDecoration);
         }
 
         if(msg.what == BeefmoteServer.MESSAGE_NOW_PLAYING) {
