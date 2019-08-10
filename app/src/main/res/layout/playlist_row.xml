@@ -3,13 +3,28 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="horizontal"
+    android:orientation="vertical"
     android:padding="10dp">
 
     <TextView
-        android:id="@+id/tvPlaylistRow"
-        android:layout_width="wrap_content"
+        android:id="@+id/playlistRowTitle"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textSize="20sp"/>
+        android:singleLine="true"
+        style="@style/Base.TextAppearance.AppCompat.Title" />
+
+    <TextView
+        android:id="@+id/playlistRowArtist"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        style="@style/Base.TextAppearance.AppCompat.Subhead" />
+
+    <TextView
+        android:id="@+id/playlistRowAlbum"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        style="@style/Base.TextAppearance.AppCompat.Subhead" />
 
 </LinearLayout>

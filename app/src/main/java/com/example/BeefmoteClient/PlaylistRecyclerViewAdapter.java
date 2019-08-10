@@ -1,6 +1,9 @@
 package com.example.BeefmoteClient;
 
 import android.content.Context;
+import android.graphics.Typeface;
+import android.text.SpannableString;
+import android.text.style.StyleSpan;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,6 +18,28 @@ public class PlaylistRecyclerViewAdapter extends RecyclerView.Adapter<PlaylistRe
     private ArrayList<Track> trackList;
     private LayoutInflater inflater;
     private ItemClickListener clickListener;
+
+    // Stores and recycles views as they are scrolled off screen
+    public class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
+        TextView playlistRowTitle;
+        TextView playlistRowArtist;
+        TextView playlistRowAlbum;
+
+        ViewHolder(View itemView) {
+            super(itemView);
+            playlistRowTitle = itemView.findViewById(R.id.playlistRowTitle);
+            playlistRowArtist = itemView.findViewById(R.id.playlistRowArtist);
+            playlistRowAlbum = itemView.findViewById(R.id.playlistRowAlbum);
+            itemView.setOnClickListener(this);
+        }
+
+        @Override
+        public void onClick(View view) {
+            if (clickListener != null) {
+                clickListener.onItemClick(view, getAdapterPosition());
+            }
+        }
+    }
 
     // Constructor
     PlaylistRecyclerViewAdapter(Context context, ArrayList<Track> trackList) {
@@ -33,32 +58,17 @@ public class PlaylistRecyclerViewAdapter extends RecyclerView.Adapter<PlaylistRe
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
         Track track = trackList.get(position);
-        holder.myTextView.setText(track.toString());
+        holder.playlistRowTitle.setText(track.getTitle());
+        holder.playlistRowArtist.setText(track.getArtist());
+        SpannableString albumSpanString = new SpannableString(track.getAlbum());
+        albumSpanString.setSpan(new StyleSpan(Typeface.ITALIC), 0, albumSpanString.length(), 0);
+        holder.playlistRowAlbum.setText(albumSpanString);
     }
 
     // Total number of rows
     @Override
     public int getItemCount() {
         return trackList.size();
-    }
-
-
-    // Stores and recycles views as they are scrolled off screen
-    public class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
-        TextView myTextView;
-
-        ViewHolder(View itemView) {
-            super(itemView);
-            myTextView = itemView.findViewById(R.id.tvPlaylistRow);
-            itemView.setOnClickListener(this);
-        }
-
-        @Override
-        public void onClick(View view) {
-            if (clickListener != null) {
-                clickListener.onItemClick(view, getAdapterPosition());
-            }
-        }
     }
 
     // Convenience method for getting data at click position
