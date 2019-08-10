@@ -23,7 +23,7 @@ public class BeefmoteServer {
     private ArrayList<String> buffer;
     private boolean stopAfterCurrent;
     private boolean notifyNowPlaying;
-    private Thread NowPlayingThread;
+    private Thread nowPlayingThread;
 
     // Beefmote commands
     private static final String BEEFMOTE_TRACKLIST = "tla";
@@ -58,9 +58,8 @@ public class BeefmoteServer {
         buffer = new ArrayList<>();
         stopAfterCurrent = false;
         notifyNowPlaying = false;
-        NowPlayingThread = null;
+        nowPlayingThread = null;
     }
-
 
     static public int nowPlayingStrToInt(String nowPlaying) {
         return Integer.parseInt(nowPlaying.split(" ")[1]);
@@ -93,8 +92,9 @@ public class BeefmoteServer {
     }
 
     // Connects to the Beefmote server. This function is blocking, i.e. it won't return
-    // until the connection is established.
-    void connect() {
+    // until the connection is established. Returns true if connection was established,
+    // false otherwise.
+    boolean connect() {
         Thread thread = new Thread() {
             public void run() {
                 try {
@@ -106,12 +106,13 @@ public class BeefmoteServer {
                     ex.printStackTrace();
                 }
 
-                try {
-                    bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
+                    if (socket != null) {
+                        try {
+                            bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
             }
         };
 
@@ -122,6 +123,8 @@ public class BeefmoteServer {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+
+        return socket != null;
     }
 
     void disconnect() {
@@ -248,12 +251,12 @@ public class BeefmoteServer {
     void setNotifyNowPlaying(final boolean notifyNowPlaying, final Handler uiHandler) {
         this.notifyNowPlaying = notifyNowPlaying;
 
-        if (notifyNowPlaying && NowPlayingThread != null) {
+        if (notifyNowPlaying && nowPlayingThread != null) {
             System.out.println("Notification true and thread running, returning");
             return;
         }
 
-        NowPlayingThread = new Thread() {
+        nowPlayingThread = new Thread() {
             public void run() {
                 String boolStr;
 
@@ -303,12 +306,12 @@ public class BeefmoteServer {
                 }
             }
         };
-        NowPlayingThread.start();
+        nowPlayingThread.start();
 
-        if (!notifyNowPlaying && NowPlayingThread != null) {
+        if (!notifyNowPlaying && nowPlayingThread != null) {
             System.out.println("Notification false and thread running, interrupting thread");
-            NowPlayingThread.interrupt();
-            NowPlayingThread = null;
+            nowPlayingThread.interrupt();
+            nowPlayingThread = null;
         }
     }
 

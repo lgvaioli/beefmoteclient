@@ -1,5 +1,13 @@
 <resources>
-    <string name="app_name">Beefmote</string>
-    <string name="edit_message">Enter a message</string>
-    <string name="button_send">Send</string>
+    <string name="app_name" translatable="false">Beefmote</string>
+    <string name="serverIP">Server IP</string>
+    <string name="serverPort">Server Port</string>
+    <string name="connect">Connect</string>
+    <string name="serverCouldNotConnect">"Couldn't connect to server!"</string>
+    <string name="playing">Playing</string>
+    <string name="stop">Stop</string>
+    <string name="play">Play</string>
+    <string name="pause">Pause</string>
+    <string name="previous">Previous</string>
+    <string name="next">Next</string>
 </resources>

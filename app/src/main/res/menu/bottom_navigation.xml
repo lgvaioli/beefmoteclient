@@ -4,26 +4,26 @@
     <item
         android:id="@+id/nav_stop"
         android:icon="@drawable/ic_stop_black_24dp"
-        android:title="Stop" />
+        android:title="@string/stop" />
 
     <item
         android:id="@+id/nav_play"
         android:icon="@drawable/ic_play_arrow_black_24dp"
-        android:title="Play" />
+        android:title="@string/play" />
 
     <item
         android:id="@+id/nav_pause"
         android:icon="@drawable/ic_pause_black_24dp"
-        android:title="Pause" />
+        android:title="@string/pause" />
 
     <item
         android:id="@+id/nav_previous"
         android:icon="@drawable/ic_skip_previous_black_24dp"
-        android:title="Previous" />
+        android:title="@string/previous" />
 
     <item
         android:id="@+id/nav_next"
         android:icon="@drawable/ic_skip_next_black_24dp"
-        android:title="Next" />
+        android:title="@string/next" />
 
 </menu>

@@ -10,46 +10,40 @@
         android:id="@+id/button_connect"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginLeft="16dp"
         android:layout_marginTop="16dp"
         android:onClick="connect"
-        android:text="Connect"
+        android:text="@string/connect"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/editText_serverPort" />
+        app:layout_constraintTop_toBottomOf="@+id/serverPort" />
 
     <EditText
-        android:id="@+id/editText_serverIP"
+        android:id="@+id/serverIp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginLeft="16dp"
         android:layout_marginTop="16dp"
-        android:gravity="center"
+        android:gravity="center_horizontal"
         android:ems="10"
         android:inputType="textPersonName"
-        android:text="Server IP"
+        android:text="@string/serverIP"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
     <EditText
-        android:id="@+id/editText_serverPort"
+        android:id="@+id/serverPort"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginLeft="16dp"
         android:layout_marginTop="16dp"
-        android:gravity="center"
+        android:gravity="center_horizontal"
         android:ems="10"
         android:inputType="textPersonName"
-        android:text="Server Port"
+        android:text="@string/serverPort"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/editText_serverIP" />
+        app:layout_constraintTop_toBottomOf="@+id/serverIp" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

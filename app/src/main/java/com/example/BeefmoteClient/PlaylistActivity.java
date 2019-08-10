@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -61,12 +62,12 @@ public class PlaylistActivity extends AppCompatActivity implements PlaylistRecyc
         String serverIpStr = intent.getStringExtra(MainActivity.SERVER_IP);
         String serverPortStr = intent.getStringExtra(MainActivity.SERVER_PORT);
 
-        if (serverIpStr.equals("Server IP")) {
+        if (serverIpStr.equals(getResources().getString(R.string.serverIP))) {
             serverIpStr = SERVER_DEFAULT_IP;
         }
 
         int serverPort;
-        if (serverPortStr.equals("Server Port")) {
+        if (serverPortStr.equals(getResources().getString(R.string.serverPort))) {
             serverPort = SERVER_DEFAULT_PORT;
         }
         else {
@@ -75,7 +76,11 @@ public class PlaylistActivity extends AppCompatActivity implements PlaylistRecyc
 
         // Create server and get track list
         beefmoteServer = new BeefmoteServer(serverIpStr, serverPort);
-        beefmoteServer.connect();
+        if (!beefmoteServer.connect()) {
+            Toast.makeText(this, getResources().getString(R.string.serverCouldNotConnect), Toast.LENGTH_LONG).show();
+            finish();
+            return;
+        }
         beefmoteServer.getTracklist(playlistUiHandler);
         beefmoteServer.setNotifyNowPlaying(true, playlistUiHandler);
     }

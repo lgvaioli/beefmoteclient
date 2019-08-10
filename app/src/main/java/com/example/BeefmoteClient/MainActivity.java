@@ -22,10 +22,10 @@ public class MainActivity extends AppCompatActivity {
         Intent intent = new Intent(this, PlaylistActivity.class);
 
         // Get server IP and port from the main layout TextViews
-        EditText editText_serverIp = findViewById(R.id.editText_serverIP);
+        EditText editText_serverIp = findViewById(R.id.serverIp);
         String serverIpStr = editText_serverIp.getText().toString();
 
-        EditText editText_serverPort = findViewById(R.id.editText_serverPort);
+        EditText editText_serverPort = findViewById(R.id.serverPort);
         String serverPortStr = editText_serverPort.getText().toString();
 
         // Pack server IP and port strings into the Intent
