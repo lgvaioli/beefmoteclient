@@ -13,7 +13,7 @@ public class Track {
     private String originalString;
 
     // Creates a Track from a String with Beefmote track format:
-    // trackAddr [artist - album] trackNum - title (duration)
+    // (trackIdx) trackAddr [artist - album] trackNum - title (duration)
     Track(String beefmoteTrack) {
         originalString = beefmoteTrack;
 

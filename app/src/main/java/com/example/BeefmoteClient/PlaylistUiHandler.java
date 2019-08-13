@@ -48,9 +48,8 @@ public class PlaylistUiHandler extends Handler {
             String nowPlayingStr = bundle.getString(BeefmoteServer.SERVER_DATA);
 
             if (nowPlayingStr != null) {
-                int idx = BeefmoteServer.nowPlayingStrToInt(nowPlayingStr);
-                Track currTrack = playlistAdapter.getItem(idx);
-                Toast.makeText(playlistActivity, playlistActivity.getResources().getString(R.string.playing) + " " + currTrack.getTitle(), Toast.LENGTH_LONG).show();
+                Track nowPlaying = new Track(nowPlayingStr);
+                Toast.makeText(playlistActivity, playlistActivity.getResources().getString(R.string.playing) + " " + nowPlaying.getTitle(), Toast.LENGTH_LONG).show();
             }
         }
     }

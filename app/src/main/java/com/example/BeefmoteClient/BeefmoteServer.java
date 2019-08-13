@@ -298,7 +298,7 @@ public class BeefmoteServer {
                         // Send buffer and clear it
                         Message msg = new Message();
                         Bundle bundle = new Bundle();
-                        bundle.putString(SERVER_DATA, inputLine);
+                        bundle.putString(SERVER_DATA, inputLine.replace("[BEEFMOTE_NOW_PLAYING] ", ""));
                         msg.setData(bundle);
                         msg.what = MESSAGE_NOW_PLAYING;
                         uiHandler.sendMessage(msg);

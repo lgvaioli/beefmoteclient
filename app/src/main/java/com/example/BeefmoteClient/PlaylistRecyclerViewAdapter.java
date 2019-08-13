@@ -7,17 +7,54 @@ import android.text.style.StyleSpan;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Filter;
+import android.widget.Filterable;
 import android.widget.TextView;
 
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
 
-public class PlaylistRecyclerViewAdapter extends RecyclerView.Adapter<PlaylistRecyclerViewAdapter.ViewHolder> {
+public class PlaylistRecyclerViewAdapter
+        extends RecyclerView.Adapter<PlaylistRecyclerViewAdapter.ViewHolder>
+        implements Filterable {
 
     private ArrayList<Track> trackList;
+    private ArrayList<Track> trackListFull;
     private LayoutInflater inflater;
     private ItemClickListener clickListener;
+    private Filter filter = new Filter() {
+        @Override
+        protected FilterResults performFiltering(CharSequence charSequence) {
+            ArrayList<Track> filteredTrackList = new ArrayList<>();
+
+            if (charSequence == null || charSequence.length() == 0) {
+                filteredTrackList.addAll(trackListFull);
+            }
+            else {
+                String filterPattern = charSequence.toString().toLowerCase().trim();
+
+                for (Track track : trackListFull) {
+                    if (track.getArtist().toLowerCase().contains(filterPattern) ||
+                            track.getAlbum().toLowerCase().contains(filterPattern) ||
+                            track.getTitle().toLowerCase().contains(filterPattern)) {
+                        filteredTrackList.add(track);
+                    }
+                }
+            }
+
+            FilterResults results = new FilterResults();
+            results.values = filteredTrackList;
+            return results;
+        }
+
+        @Override
+        protected void publishResults(CharSequence charSequence, FilterResults filterResults) {
+            trackList.clear();
+            trackList.addAll((ArrayList<Track>) filterResults.values);
+            notifyDataSetChanged();
+        }
+    };
 
     // Stores and recycles views as they are scrolled off screen
     public class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
@@ -45,6 +82,7 @@ public class PlaylistRecyclerViewAdapter extends RecyclerView.Adapter<PlaylistRe
     PlaylistRecyclerViewAdapter(Context context, ArrayList<Track> trackList) {
         this.inflater = LayoutInflater.from(context);
         this.trackList = trackList;
+        this.trackListFull = new ArrayList<>(trackList);
     }
 
     // Inflates the row layout from xml when needed
@@ -84,5 +122,11 @@ public class PlaylistRecyclerViewAdapter extends RecyclerView.Adapter<PlaylistRe
     // Parent activity will implement this method to respond to click events
     public interface ItemClickListener {
         void onItemClick(View view, int position);
+    }
+
+    // Filterable methods
+    @Override
+    public Filter getFilter() {
+        return filter;
     }
 }
