@@ -209,7 +209,7 @@ public class BeefmoteServer {
     }
 
     void playTrack(final Track track) {
-        sendCommand(BEEFMOTE_PLAYTRACK + " " + track.getTrackAddr());
+        sendCommand(BEEFMOTE_PLAYTRACK + " " + track.getAddress());
     }
 
     void playRandom() {
