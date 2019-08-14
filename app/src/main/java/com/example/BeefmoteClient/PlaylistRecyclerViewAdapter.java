@@ -1,6 +1,7 @@
 package com.example.BeefmoteClient;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.graphics.Typeface;
 import android.text.SpannableString;
 import android.text.style.StyleSpan;
@@ -9,6 +10,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Filter;
 import android.widget.Filterable;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.recyclerview.widget.RecyclerView;
@@ -23,6 +25,7 @@ public class PlaylistRecyclerViewAdapter
     private ArrayList<Track> trackListFull;
     private LayoutInflater inflater;
     private ItemClickListener clickListener;
+    private final ArrayList<Integer> selectedTracks = new ArrayList<>();
     private Filter filter = new Filter() {
         @Override
         protected FilterResults performFiltering(CharSequence charSequence) {
@@ -56,14 +59,18 @@ public class PlaylistRecyclerViewAdapter
         }
     };
 
-    // Stores and recycles views as they are scrolled off screen
+      /////////////////////////////////////////////////////////////////////////
+     // SUBCLASS. Stores and recycles views as they are scrolled off screen //
+    /////////////////////////////////////////////////////////////////////////
     public class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
+        LinearLayout playlistRowLayout;
         TextView playlistRowTitle;
         TextView playlistRowArtist;
         TextView playlistRowAlbum;
 
         ViewHolder(View itemView) {
             super(itemView);
+            playlistRowLayout = itemView.findViewById(R.id.playlistRowLayout);
             playlistRowTitle = itemView.findViewById(R.id.playlistRowTitle);
             playlistRowArtist = itemView.findViewById(R.id.playlistRowArtist);
             playlistRowAlbum = itemView.findViewById(R.id.playlistRowAlbum);
@@ -92,6 +99,23 @@ public class PlaylistRecyclerViewAdapter
         return new ViewHolder(view);
     }
 
+    // Highlights holder.
+    public void highlightHolder(ViewHolder holder) {
+        // FIXME hardcoded colors
+        holder.playlistRowLayout.setBackgroundColor(Color.parseColor("#008577"));
+        holder.playlistRowTitle.setTextColor(Color.WHITE);
+        holder.playlistRowArtist.setTextColor(Color.WHITE);
+        holder.playlistRowAlbum.setTextColor(Color.WHITE);
+    }
+
+    // De-highlights holder.
+    private void dehighlightHolder(ViewHolder holder) {
+        holder.playlistRowLayout.setBackgroundColor(Color.TRANSPARENT);
+        holder.playlistRowTitle.setTextColor(Color.BLACK);
+        holder.playlistRowArtist.setTextColor(Color.BLACK);
+        holder.playlistRowAlbum.setTextColor(Color.BLACK);
+    }
+
     // Binds the data to the TextView in each row
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
@@ -101,6 +125,13 @@ public class PlaylistRecyclerViewAdapter
         SpannableString albumSpanString = new SpannableString(track.getAlbum());
         albumSpanString.setSpan(new StyleSpan(Typeface.ITALIC), 0, albumSpanString.length(), 0);
         holder.playlistRowAlbum.setText(albumSpanString);
+
+        if (!selectedTracks.contains(position)) {
+            dehighlightHolder(holder);
+        }
+        else {
+            highlightHolder(holder);
+        }
     }
 
     // Total number of rows
@@ -114,6 +145,11 @@ public class PlaylistRecyclerViewAdapter
         return trackList.get(id);
     }
 
+    // Get selectedTracks
+    ArrayList<Integer> getSelectedTracks() {
+        return selectedTracks;
+    }
+
     // Allows clicks events to be caught
     void setClickListener(ItemClickListener itemClickListener) {
         this.clickListener = itemClickListener;
@@ -122,6 +158,19 @@ public class PlaylistRecyclerViewAdapter
     // Parent activity will implement this method to respond to click events
     public interface ItemClickListener {
         void onItemClick(View view, int position);
+    }
+
+    // Get adapter position of track in current (i.e. filtered) tracklist
+    int getTrackPosition(Track track) {
+        int i = 0;
+        for (Track t : trackList) {
+            if (t.equals(track)) {
+                return i;
+            }
+            i++;
+        }
+
+        return -1;
     }
 
     // Filterable methods

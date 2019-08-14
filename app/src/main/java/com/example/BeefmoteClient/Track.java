@@ -1,5 +1,6 @@
 package com.example.BeefmoteClient;
 
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -62,5 +63,35 @@ public class Track {
     @Override
     public String toString() {
         return artist + " - " + title;
+    }
+
+    @Override
+    public boolean equals(Object otherObject) {
+        if (this == otherObject) {
+            return true;
+        }
+
+        if (otherObject == null) {
+            return false;
+        }
+
+        if (!(otherObject instanceof Track)) {
+            return false;
+        }
+
+        Track other = (Track) otherObject;
+
+        return playlistIndex == other.playlistIndex &&
+                address.equals(other.address) &&
+                artist.equals(other.artist) &&
+                album.equals(other.album) &&
+                number.equals(other.number) &&
+                title.equals(other.title) &&
+                duration.equals(other.duration);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(playlistIndex, address, artist, album, number, title, duration);
     }
 }
