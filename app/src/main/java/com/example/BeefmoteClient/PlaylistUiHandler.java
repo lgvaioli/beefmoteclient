@@ -3,6 +3,8 @@ package com.example.BeefmoteClient;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.view.View;
+import android.widget.ProgressBar;
 
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -53,6 +55,13 @@ public class PlaylistUiHandler extends Handler {
                 playlistActivity.getBeefmoteServer().setNotifyNowPlaying(true, this);
                 //Toast.makeText(playlistActivity, "Now Playing = TRUE", Toast.LENGTH_LONG).show();
                 tracklistNum = -1;
+
+                // Hide progress bar
+                ProgressBar progressBar = playlistActivity.findViewById(R.id.playlistProgressBar);
+                if (progressBar != null) {
+                    progressBar.setVisibility(View.INVISIBLE);
+                }
+
                 return;
             }
 
@@ -63,7 +72,13 @@ public class PlaylistUiHandler extends Handler {
 
             playlistAdapter.notifyDataSetChanged();
 
-            //double percent = ((double) trackList.size()/ (double) tracklistNum)*100;
+            // Update progress bar
+            ProgressBar progressBar = playlistActivity.findViewById(R.id.playlistProgressBar);
+            if (progressBar != null) {
+                double percent = ((double) trackList.size() / (double) tracklistNum) * 100;
+                progressBar.setProgress((int) percent);
+            }
+
             //Toast.makeText(playlistActivity, "%" + (int) percent, Toast.LENGTH_SHORT).show();
         }
 
