@@ -1,4 +1,4 @@
-package com.example.BeefmoteClient;
+package com.lgvaioli.beefmoteclient;
 
 import java.util.Objects;
 import java.util.regex.Matcher;

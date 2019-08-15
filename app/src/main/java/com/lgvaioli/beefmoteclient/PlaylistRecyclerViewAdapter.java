@@ -1,4 +1,4 @@
-package com.example.BeefmoteClient;
+package com.lgvaioli.beefmoteclient;
 
 import android.content.Context;
 import android.graphics.Color;
