@@ -25,7 +25,7 @@ public class PlaylistUiHandler extends Handler {
         playlistRecycler = playlistActivity.findViewById(R.id.rvPlaylist);
         LinearLayoutManager layoutManager = new LinearLayoutManager(playlistActivity);
         playlistRecycler.setLayoutManager(layoutManager);
-        playlistAdapter = new PlaylistRecyclerViewAdapter(playlistActivity, trackList);
+        playlistAdapter = new PlaylistRecyclerViewAdapter(playlistActivity, playlistRecycler, trackList);
         playlistAdapter.setClickListener(playlistActivity);
         playlistRecycler.setAdapter(playlistAdapter);
     }
@@ -109,6 +109,13 @@ public class PlaylistUiHandler extends Handler {
 
             if (holder != null) {
                 playlistAdapter.highlightHolder(holder);
+            }
+            else {
+                LinearLayoutManager layoutManager = (LinearLayoutManager) playlistRecycler.getLayoutManager();
+
+                if (layoutManager != null) {
+                    layoutManager.scrollToPositionWithOffset(adapterPosition, 0);
+                }
             }
 
             playlistAdapter.setCurrentTrack(nowPlaying);

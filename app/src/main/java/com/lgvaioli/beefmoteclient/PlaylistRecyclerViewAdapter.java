@@ -14,6 +14,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
@@ -21,6 +22,7 @@ import java.util.ArrayList;
 public class PlaylistRecyclerViewAdapter
         extends RecyclerView.Adapter<PlaylistRecyclerViewAdapter.ViewHolder>
         implements Filterable {
+    private RecyclerView playlistRecyclerView;
     private Track currentTrack;
     private final ArrayList<Integer> currentTrackPosition = new ArrayList<>();
     private ArrayList<Track> trackList;
@@ -68,7 +70,15 @@ public class PlaylistRecyclerViewAdapter
             notifyDataSetChanged();
 
             // Refresh current track position
-            setCurrentTrackPosition(getTrackPosition(currentTrack));
+            int currentPosition = getTrackPosition(currentTrack);
+            setCurrentTrackPosition(currentPosition);
+
+            // Scroll RecyclerView
+            LinearLayoutManager layoutManager = (LinearLayoutManager) playlistRecyclerView.getLayoutManager();
+
+            if (layoutManager != null) {
+                layoutManager.scrollToPositionWithOffset(currentPosition, 0);
+            }
         }
     };
 
@@ -99,8 +109,9 @@ public class PlaylistRecyclerViewAdapter
     }
 
     // Constructor
-    PlaylistRecyclerViewAdapter(Context context, ArrayList<Track> trackList) {
+    PlaylistRecyclerViewAdapter(Context context, RecyclerView playlistRecyclerView, ArrayList<Track> trackList) {
         this.inflater = LayoutInflater.from(context);
+        this.playlistRecyclerView = playlistRecyclerView;
         this.trackList = trackList;
         this.trackListFull = null;
     }
