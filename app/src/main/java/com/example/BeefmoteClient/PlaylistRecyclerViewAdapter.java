@@ -29,6 +29,15 @@ public class PlaylistRecyclerViewAdapter
     private Filter filter = new Filter() {
         @Override
         protected FilterResults performFiltering(CharSequence charSequence) {
+            // This is necessary because given that the track loading is not blocking anymore,
+            // trackListFull is initially null and we have to initialize it somewhere. If the
+            // user searches something *before* all the tracks are loaded we're in trouble though,
+            // so we should either a) make sure that the user doesn't search anything before
+            // all the tracks are loaded, or b) change this to account for that situation.
+            if (trackListFull == null) {
+                trackListFull = new ArrayList<>(trackList);
+            }
+
             ArrayList<Track> filteredTrackList = new ArrayList<>();
 
             if (charSequence == null || charSequence.length() == 0) {
@@ -89,7 +98,7 @@ public class PlaylistRecyclerViewAdapter
     PlaylistRecyclerViewAdapter(Context context, ArrayList<Track> trackList) {
         this.inflater = LayoutInflater.from(context);
         this.trackList = trackList;
-        this.trackListFull = new ArrayList<>(trackList);
+        this.trackListFull = null;
     }
 
     // Inflates the row layout from xml when needed
