@@ -13,6 +13,7 @@ import android.widget.Filterable;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
@@ -20,12 +21,12 @@ import java.util.ArrayList;
 public class PlaylistRecyclerViewAdapter
         extends RecyclerView.Adapter<PlaylistRecyclerViewAdapter.ViewHolder>
         implements Filterable {
-
+    private Track currentTrack;
+    private final ArrayList<Integer> currentTrackPosition = new ArrayList<>();
     private ArrayList<Track> trackList;
     private ArrayList<Track> trackListFull;
     private LayoutInflater inflater;
     private ItemClickListener clickListener;
-    private final ArrayList<Integer> selectedTracks = new ArrayList<>();
     private Filter filter = new Filter() {
         @Override
         protected FilterResults performFiltering(CharSequence charSequence) {
@@ -60,11 +61,14 @@ public class PlaylistRecyclerViewAdapter
             return results;
         }
 
-        @Override
+        @Override @SuppressWarnings("unchecked")
         protected void publishResults(CharSequence charSequence, FilterResults filterResults) {
             trackList.clear();
             trackList.addAll((ArrayList<Track>) filterResults.values);
             notifyDataSetChanged();
+
+            // Refresh current track position
+            setCurrentTrackPosition(getTrackPosition(currentTrack));
         }
     };
 
@@ -101,15 +105,20 @@ public class PlaylistRecyclerViewAdapter
         this.trackListFull = null;
     }
 
+    // Sets current track
+    void setCurrentTrack(Track t) {
+        currentTrack = t;
+    }
+
     // Inflates the row layout from xml when needed
     @Override
-    public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+    @NonNull public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = inflater.inflate(R.layout.playlist_row, parent, false);
         return new ViewHolder(view);
     }
 
     // Highlights holder.
-    public void highlightHolder(ViewHolder holder) {
+    void highlightHolder(ViewHolder holder) {
         // FIXME hardcoded colors
         holder.playlistRowLayout.setBackgroundColor(Color.parseColor("#008577"));
         holder.playlistRowTitle.setTextColor(Color.WHITE);
@@ -127,7 +136,7 @@ public class PlaylistRecyclerViewAdapter
 
     // Binds the data to the TextView in each row
     @Override
-    public void onBindViewHolder(ViewHolder holder, int position) {
+    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Track track = trackList.get(position);
         holder.playlistRowTitle.setText(track.getTitle());
         holder.playlistRowArtist.setText(track.getArtist());
@@ -135,7 +144,7 @@ public class PlaylistRecyclerViewAdapter
         albumSpanString.setSpan(new StyleSpan(Typeface.ITALIC), 0, albumSpanString.length(), 0);
         holder.playlistRowAlbum.setText(albumSpanString);
 
-        if (!selectedTracks.contains(position)) {
+        if (!currentTrackPosition.contains(position)) {
             dehighlightHolder(holder);
         }
         else {
@@ -154,9 +163,16 @@ public class PlaylistRecyclerViewAdapter
         return trackList.get(id);
     }
 
-    // Get selectedTracks
-    ArrayList<Integer> getSelectedTracks() {
-        return selectedTracks;
+    // Set currentTrackPosition
+    void setCurrentTrackPosition (int newPosition) {
+        if (currentTrackPosition.isEmpty()) {
+            currentTrackPosition.add(newPosition);
+        } else {
+            int old = currentTrackPosition.get(0);
+            currentTrackPosition.clear();
+            currentTrackPosition.add(newPosition);
+            notifyItemChanged(old);
+        }
     }
 
     // Allows clicks events to be caught

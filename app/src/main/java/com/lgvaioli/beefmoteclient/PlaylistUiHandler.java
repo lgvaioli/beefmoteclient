@@ -6,6 +6,7 @@ import android.os.Message;
 import android.view.View;
 import android.widget.ProgressBar;
 
+import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -29,15 +30,19 @@ public class PlaylistUiHandler extends Handler {
         playlistRecycler.setAdapter(playlistAdapter);
     }
 
-    public PlaylistRecyclerViewAdapter getPlaylistAdapter() {
+    PlaylistRecyclerViewAdapter getPlaylistAdapter() {
         return playlistAdapter;
     }
 
     @Override
-    public void handleMessage(Message msg) {
+    public void handleMessage(@NonNull Message msg) {
         if (msg.what == BeefmoteServer.MESSAGE_TRACKLIST_BATCH_READY) {
             Bundle bundle = msg.getData();
             ArrayList<String> buffer = bundle.getStringArrayList(BeefmoteServer.TRACKLIST_DATA);
+
+            if (buffer == null) {
+                return;
+            }
 
             // FIXME hardcoded string; this method shouldn't know about these details
             if (buffer.get(0).startsWith("[BEEFMOTE_TRACKLIST_BEGIN]")) {
@@ -106,16 +111,9 @@ public class PlaylistUiHandler extends Handler {
                 playlistAdapter.highlightHolder(holder);
             }
 
-            ArrayList<Integer> selectedTracks = playlistAdapter.getSelectedTracks();
-
-            if (selectedTracks.isEmpty()) {
-                selectedTracks.add(adapterPosition);
-            } else {
-                int old = selectedTracks.get(0);
-                selectedTracks.clear();
-                selectedTracks.add(adapterPosition);
-                playlistAdapter.notifyItemChanged(old);
-            }
+            playlistAdapter.setCurrentTrack(nowPlaying);
+            playlistAdapter.setCurrentTrackPosition(adapterPosition);
+            playlistAdapter.notifyItemChanged(adapterPosition);
         }
     }
 }
