@@ -2,6 +2,7 @@ package com.example.BeefmoteClient;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -65,6 +66,12 @@ public class PlaylistActivity extends AppCompatActivity implements PlaylistRecyc
         String serverIpStr = intent.getStringExtra(MainActivity.SERVER_IP);
         String serverPortStr = intent.getStringExtra(MainActivity.SERVER_PORT);
 
+        // This should never happen
+        if (serverIpStr == null || serverPortStr == null) {
+            finish();
+            return;
+        }
+
         if (serverIpStr.equals(getResources().getString(R.string.serverIP))) {
             serverIpStr = SERVER_DEFAULT_IP;
         }
@@ -123,5 +130,26 @@ public class PlaylistActivity extends AppCompatActivity implements PlaylistRecyc
         });
 
         return true;
+    }
+
+    // Handle volume keys
+    @Override
+    public boolean dispatchKeyEvent(KeyEvent event) {
+        int action = event.getAction();
+        int keyCode = event.getKeyCode();
+        switch (keyCode) {
+            case KeyEvent.KEYCODE_VOLUME_UP:
+                if (action == KeyEvent.ACTION_DOWN) {
+                    beefmoteServer.volumeUp();
+                }
+                return true;
+            case KeyEvent.KEYCODE_VOLUME_DOWN:
+                if (action == KeyEvent.ACTION_DOWN) {
+                    beefmoteServer.volumeDown();
+                }
+                return true;
+            default:
+                return super.dispatchKeyEvent(event);
+        }
     }
 }
