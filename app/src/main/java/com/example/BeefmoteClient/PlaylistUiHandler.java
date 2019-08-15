@@ -14,10 +14,17 @@ public class PlaylistUiHandler extends Handler {
     private ArrayList<Track> trackList;
     private RecyclerView playlistRecycler;
     private PlaylistRecyclerViewAdapter playlistAdapter;
+    private int tracklistNum = -1;
 
     PlaylistUiHandler(PlaylistActivity playlistActivity) {
         this.playlistActivity = playlistActivity;
         trackList = new ArrayList<>();
+        playlistRecycler = playlistActivity.findViewById(R.id.rvPlaylist);
+        LinearLayoutManager layoutManager = new LinearLayoutManager(playlistActivity);
+        playlistRecycler.setLayoutManager(layoutManager);
+        playlistAdapter = new PlaylistRecyclerViewAdapter(playlistActivity, trackList);
+        playlistAdapter.setClickListener(playlistActivity);
+        playlistRecycler.setAdapter(playlistAdapter);
     }
 
     public PlaylistRecyclerViewAdapter getPlaylistAdapter() {
@@ -26,26 +33,43 @@ public class PlaylistUiHandler extends Handler {
 
     @Override
     public void handleMessage(Message msg) {
-        if (msg.what == BeefmoteServer.MESSAGE_TRACKLIST_READY) {
+        if (msg.what == BeefmoteServer.MESSAGE_TRACKLIST_BATCH_READY) {
             Bundle bundle = msg.getData();
-            ArrayList<String> buffer = bundle.getStringArrayList(BeefmoteServer.SERVER_DATA);
+            ArrayList<String> buffer = bundle.getStringArrayList(BeefmoteServer.TRACKLIST_DATA);
+
+            // FIXME hardcoded string; this method shouldn't know about these details
+            if (buffer.get(0).startsWith("[BEEFMOTE_TRACKLIST_BEGIN]")) {
+                String trackNumStr = buffer.get(0).split(" ", 0)[1];
+                tracklistNum = Integer.parseInt(trackNumStr);
+
+                //System.out.println("Receiving " + trackNum + " tracks");
+                //Toast.makeText(playlistActivity, "Receiving " + trackNumStr + " tracks", Toast.LENGTH_LONG).show();
+
+                return;
+            }
+
+            // FIXME ugly hack; the BeefmoteServer class should be reimplemented using the Actor pattern
+            if (buffer.get(0).startsWith("[BEEFMOTE_TRACKLIST_END]")) {
+                playlistActivity.getBeefmoteServer().setNotifyNowPlaying(true, this);
+                //Toast.makeText(playlistActivity, "Now Playing = TRUE", Toast.LENGTH_LONG).show();
+                tracklistNum = -1;
+                return;
+            }
 
             for (String str : buffer) {
                 Track track = new Track(str);
                 trackList.add(track);
             }
 
-            playlistRecycler = playlistActivity.findViewById(R.id.rvPlaylist);
-            LinearLayoutManager layoutManager = new LinearLayoutManager(playlistActivity);
-            playlistRecycler.setLayoutManager(layoutManager);
-            playlistAdapter = new PlaylistRecyclerViewAdapter(playlistActivity, trackList);
-            playlistAdapter.setClickListener(playlistActivity);
-            playlistRecycler.setAdapter(playlistAdapter);
+            playlistAdapter.notifyDataSetChanged();
+
+            //double percent = ((double) trackList.size()/ (double) tracklistNum)*100;
+            //Toast.makeText(playlistActivity, "%" + (int) percent, Toast.LENGTH_SHORT).show();
         }
 
         if(msg.what == BeefmoteServer.MESSAGE_NOW_PLAYING) {
             Bundle bundle = msg.getData();
-            String nowPlayingStr = bundle.getString(BeefmoteServer.SERVER_DATA);
+            String nowPlayingStr = bundle.getString(BeefmoteServer.NOW_PLAYING_DATA);
 
             if (nowPlayingStr == null) {
                 return;

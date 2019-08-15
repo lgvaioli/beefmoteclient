@@ -15,15 +15,16 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 
+// FIXME REIMPLEMENT THIS USING THE ACTOR PATTERN
 public class BeefmoteServer {
     private Socket socket;
     private BufferedReader bufferedReader;
     private String serverIp;
     private int serverPort;
-    private ArrayList<String> buffer;
     private boolean stopAfterCurrent;
     private boolean notifyNowPlaying;
     private Thread nowPlayingThread;
+    private final int TRACKLIST_BATCH_SIZE = 100;
 
     // Beefmote commands
     private static final String BEEFMOTE_TRACKLIST = "tla";
@@ -43,19 +44,19 @@ public class BeefmoteServer {
     private static final String BEEFMOTE_EXIT = "exit";
 
     // Beefmote messages (for communication with the PlaylistUiHandler)
-    static final int MESSAGE_TRACKLIST_READY = 0;
+    static final int MESSAGE_TRACKLIST_BATCH_READY = 0;
     static final int MESSAGE_PLAYLISTS_READY = 1;
     static final int MESSAGE_CURRENT_PLAYLIST_READY = 2;
     static final int MESSAGE_SEARCH_READY = 3;
     static final int MESSAGE_NOW_PLAYING = 4;
 
-    // Dummy string for storing/extracting data from a Bundle (PlaylistUiHandler communication stuff)
-    static final String SERVER_DATA = "SERVER_DATA";
+    // Dummy strings for storing/extracting data from a Bundle (PlaylistUiHandler communication stuff)
+    static final String TRACKLIST_DATA = "TRACKLIST_DATA";
+    static final String NOW_PLAYING_DATA = "NOW_PLAYING_DATA";
 
     BeefmoteServer(String serverIp, int serverPort) {
         this.serverIp = serverIp;
         this.serverPort = serverPort;
-        buffer = new ArrayList<>();
         stopAfterCurrent = false;
         notifyNowPlaying = false;
         nowPlayingThread = null;
@@ -139,7 +140,7 @@ public class BeefmoteServer {
         }.start();
     }
 
-    // Gets tracklist. Blocking function.
+    // Gets tracklist.
     void getTracklist(final Handler uiHandler) {
         Thread thread = new Thread() {
             public void run() {
@@ -155,7 +156,7 @@ public class BeefmoteServer {
 
                 // ... and get results
                 String inputLine = null;
-                boolean receivingTracklist = false;
+                ArrayList<String> trackBuffer = new ArrayList<>(TRACKLIST_BATCH_SIZE);
 
                 while(true) {
                     try {
@@ -166,42 +167,74 @@ public class BeefmoteServer {
                         e.printStackTrace();
                     }
 
-                    if (inputLine.equals("[BEEFMOTE_TRACKLIST_BEGIN]")) {
-                        receivingTracklist = true;
+                    if (inputLine.startsWith("[BEEFMOTE_TRACKLIST_BEGIN]")) {
+                        // Send buffer and reset it
+                        trackBuffer.add(inputLine);
+                        Message msg = new Message();
+                        Bundle bundle = new Bundle();
+                        bundle.putStringArrayList(TRACKLIST_DATA, trackBuffer);
+                        msg.setData(bundle);
+                        msg.what = MESSAGE_TRACKLIST_BATCH_READY;
+                        uiHandler.sendMessage(msg);
+                        trackBuffer = new ArrayList<>();
+
                         continue;
                     }
 
                     if (inputLine.equals("[BEEFMOTE_TRACKLIST_END]")) {
-                        receivingTracklist = false;
+                        if (trackBuffer.size() > 0) {
+                            // Send buffer
+                            Message msg = new Message();
+                            Bundle bundle = new Bundle();
+                            bundle.putStringArrayList(TRACKLIST_DATA, trackBuffer);
+                            msg.setData(bundle);
+                            msg.what = MESSAGE_TRACKLIST_BATCH_READY;
+                            uiHandler.sendMessage(msg);
 
-                        // Send buffer and clear it
-                        Message msg = new Message();
-                        Bundle bundle = new Bundle();
-                        bundle.putStringArrayList(SERVER_DATA, buffer);
-                        msg.setData(bundle);
-                        msg.what = MESSAGE_TRACKLIST_READY;
-                        uiHandler.sendMessage(msg);
+                            // Send the end message itself
+                            trackBuffer = new ArrayList<>();
+                            trackBuffer.add(inputLine);
+                            msg = new Message();
+                            bundle = new Bundle();
+                            bundle.putStringArrayList(TRACKLIST_DATA, trackBuffer);
+                            msg.setData(bundle);
+                            msg.what = MESSAGE_TRACKLIST_BATCH_READY;
+                            uiHandler.sendMessage(msg);
 
-                        // Reset buffer
-                        buffer = new ArrayList<>();
-
-                        break;
+                            break;
+                        }
+                        else {
+                            // Send the end message itself
+                            trackBuffer = new ArrayList<>();
+                            trackBuffer.add(inputLine);
+                            Message msg = new Message();
+                            Bundle bundle = new Bundle();
+                            bundle.putStringArrayList(TRACKLIST_DATA, trackBuffer);
+                            msg.setData(bundle);
+                            msg.what = MESSAGE_TRACKLIST_BATCH_READY;
+                            uiHandler.sendMessage(msg);
+                        }
                     }
 
-                    if (receivingTracklist) {
-                        buffer.add(inputLine);
+                    if (inputLine.startsWith("[BEEFMOTE_TRACKLIST_TRACK]")) {
+                        trackBuffer.add(inputLine.replace("[BEEFMOTE_TRACKLIST_TRACK] ", ""));
+
+                        if (trackBuffer.size() == TRACKLIST_BATCH_SIZE) {
+                            // Send buffer and reset it
+                            Message msg = new Message();
+                            Bundle bundle = new Bundle();
+                            bundle.putStringArrayList(TRACKLIST_DATA, trackBuffer);
+                            msg.setData(bundle);
+                            msg.what = MESSAGE_TRACKLIST_BATCH_READY;
+                            uiHandler.sendMessage(msg);
+                            trackBuffer = new ArrayList<>();
+                        }
                     }
                 }
             }
         };
 
         thread.start();
-
-        try {
-            thread.join();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
     }
 
     void play() {
@@ -298,7 +331,7 @@ public class BeefmoteServer {
                         // Send buffer and clear it
                         Message msg = new Message();
                         Bundle bundle = new Bundle();
-                        bundle.putString(SERVER_DATA, inputLine.replace("[BEEFMOTE_NOW_PLAYING] ", ""));
+                        bundle.putString(NOW_PLAYING_DATA, inputLine.replace("[BEEFMOTE_NOW_PLAYING] ", ""));
                         msg.setData(bundle);
                         msg.what = MESSAGE_NOW_PLAYING;
                         uiHandler.sendMessage(msg);

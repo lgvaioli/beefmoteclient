@@ -84,8 +84,13 @@ public class PlaylistActivity extends AppCompatActivity implements PlaylistRecyc
             finish();
             return;
         }
+
+        //beefmoteServer.setNotifyNowPlaying(true, playlistUiHandler);
         beefmoteServer.getTracklist(playlistUiHandler);
-        beefmoteServer.setNotifyNowPlaying(true, playlistUiHandler);
+    }
+
+    BeefmoteServer getBeefmoteServer() {
+        return beefmoteServer;
     }
 
     // Called when the user clicks a track
