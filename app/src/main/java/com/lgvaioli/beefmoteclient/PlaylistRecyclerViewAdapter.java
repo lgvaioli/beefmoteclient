@@ -5,7 +5,9 @@ import android.graphics.Color;
 import android.graphics.Typeface;
 import android.text.SpannableString;
 import android.text.style.StyleSpan;
+import android.view.ContextMenu;
 import android.view.LayoutInflater;
+import android.view.Menu;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Filter;
@@ -29,6 +31,7 @@ public class PlaylistRecyclerViewAdapter
     private ArrayList<Track> trackListFull;
     private LayoutInflater inflater;
     private ItemClickListener clickListener;
+    static final int CONTEXT_MENU_ADD_TO_PLAYBACKQUEUE = 100;
     private Filter filter = new Filter() {
         @Override
         protected FilterResults performFiltering(CharSequence charSequence) {
@@ -85,7 +88,9 @@ public class PlaylistRecyclerViewAdapter
       /////////////////////////////////////////////////////////////////////////
      // SUBCLASS. Stores and recycles views as they are scrolled off screen //
     /////////////////////////////////////////////////////////////////////////
-    public class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
+    public class ViewHolder
+              extends RecyclerView.ViewHolder
+              implements View.OnClickListener, View.OnCreateContextMenuListener {
         LinearLayout playlistRowLayout;
         TextView playlistRowTitle;
         TextView playlistRowArtist;
@@ -98,6 +103,7 @@ public class PlaylistRecyclerViewAdapter
             playlistRowArtist = itemView.findViewById(R.id.playlistRowArtist);
             playlistRowAlbum = itemView.findViewById(R.id.playlistRowAlbum);
             itemView.setOnClickListener(this);
+            itemView.setOnCreateContextMenuListener(this);
         }
 
         @Override
@@ -106,7 +112,19 @@ public class PlaylistRecyclerViewAdapter
                 clickListener.onItemClick(view, getAdapterPosition());
             }
         }
-    }
+
+          @Override
+          public void onCreateContextMenu(ContextMenu contextMenu, View view,
+                                          ContextMenu.ContextMenuInfo contextMenuInfo) {
+            contextMenu.add(this.getAdapterPosition(), CONTEXT_MENU_ADD_TO_PLAYBACKQUEUE,
+                    Menu.NONE, R.string.addPlaybackQueue);
+
+            // Using this you can create menus dynamically depending on the clicked track's
+            // properties. This is useful to create, for example, a "Remove from playback queue"
+            // menu (which shouldn't be shown unless the track is already in the playback queue).
+            //Track track = getItem(this.getAdapterPosition());
+          }
+      }
 
     // Constructor
     PlaylistRecyclerViewAdapter(Context context, RecyclerView playlistRecyclerView, ArrayList<Track> trackList) {

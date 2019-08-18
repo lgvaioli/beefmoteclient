@@ -152,4 +152,18 @@ public class PlaylistActivity extends AppCompatActivity implements PlaylistRecyc
                 return super.dispatchKeyEvent(event);
         }
     }
+
+    // Handle context menu selection
+    @Override
+    public boolean onContextItemSelected(@NonNull MenuItem item) {
+        switch(item.getItemId()) {
+            case PlaylistRecyclerViewAdapter.CONTEXT_MENU_ADD_TO_PLAYBACKQUEUE:
+                Track track = playlistUiHandler.getPlaylistAdapter().getItem(item.getGroupId());
+                beefmoteServer.addToPlaybackQueue(track);
+                return true;
+
+            default:
+                return super.onContextItemSelected(item);
+        }
+    }
 }

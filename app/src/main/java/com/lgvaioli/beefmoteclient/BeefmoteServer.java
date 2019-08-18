@@ -40,6 +40,7 @@ public class BeefmoteServer {
     private static final String BEEFMOTE_VOLUME_DOWN = "vd";
     private static final String BEEFMOTE_SEEK_FORWARD = "sf";
     private static final String BEEFMOTE_SEEK_BACKWARD = "sb";
+    private static final String BEEFMOTE_ADD_PLAYBACKQUEUE_ADDRESS = "apa";
     private static final String BEEFMOTE_NOTIFY_NOW_PLAYING = "ntfy-nowplaying";
     private static final String BEEFMOTE_EXIT = "exit";
 
@@ -350,6 +351,10 @@ public class BeefmoteServer {
 
     boolean getNotifyNowPlaying() {
         return notifyNowPlaying;
+    }
+
+    void addToPlaybackQueue(Track track) {
+        sendCommand(BEEFMOTE_ADD_PLAYBACKQUEUE_ADDRESS + " " + track.getAddress());
     }
 
     void exit() {
