@@ -16,7 +16,7 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 
 // FIXME REIMPLEMENT THIS USING THE ACTOR PATTERN
-public class BeefmoteServer {
+public class BeefmoteServer implements TracklistEmitter, NowPlayingEmitter {
     private Socket socket;
     private BufferedReader bufferedReader;
     private String serverIp;
@@ -25,6 +25,10 @@ public class BeefmoteServer {
     private boolean notifyNowPlaying;
     private Thread nowPlayingThread;
     private final int TRACKLIST_BATCH_SIZE = 100;
+    private ArrayList<String> trackBuffer;
+    private ArrayList<TracklistListener> tracklistListeners;
+    private String nowPlayingStr;
+    private ArrayList<NowPlayingListener> nowPlayingListeners;
 
     // Beefmote commands
     private static final String BEEFMOTE_TRACKLIST = "tla";
@@ -44,14 +48,21 @@ public class BeefmoteServer {
     private static final String BEEFMOTE_NOTIFY_NOW_PLAYING = "ntfy-nowplaying";
     private static final String BEEFMOTE_EXIT = "exit";
 
-    // Beefmote messages (for communication with the PlaylistUiHandler)
+    // Beefmote command markers
+    static final String BEEFMOTE_TRACKLIST_BEGIN = "[BEEFMOTE_TRACKLIST_BEGIN]";
+    static final String BEEFMOTE_TRACKLIST_END = "[BEEFMOTE_TRACKLIST_END]";
+    static final String BEEFMOTE_TRACKLIST_TRACK = "[BEEFMOTE_TRACKLIST_TRACK]";
+    static final String BEEFMOTE_NOW_PLAYING = "[BEEFMOTE_NOW_PLAYING]";
+
+
+    // Beefmote messages
     static final int MESSAGE_TRACKLIST_BATCH_READY = 0;
     static final int MESSAGE_PLAYLISTS_READY = 1;
     static final int MESSAGE_CURRENT_PLAYLIST_READY = 2;
     static final int MESSAGE_SEARCH_READY = 3;
     static final int MESSAGE_NOW_PLAYING = 4;
 
-    // Dummy strings for storing/extracting data from a Bundle (PlaylistUiHandler communication stuff)
+    // Dummy strings for storing/extracting data from a Bundle
     static final String TRACKLIST_DATA = "TRACKLIST_DATA";
     static final String NOW_PLAYING_DATA = "NOW_PLAYING_DATA";
 
@@ -61,6 +72,9 @@ public class BeefmoteServer {
         stopAfterCurrent = false;
         notifyNowPlaying = false;
         nowPlayingThread = null;
+        trackBuffer = new ArrayList<>(TRACKLIST_BATCH_SIZE);
+        tracklistListeners = new ArrayList<>();
+        nowPlayingListeners = new ArrayList<>();
     }
 
     static public int nowPlayingStrToInt(String nowPlaying) {
@@ -142,7 +156,7 @@ public class BeefmoteServer {
     }
 
     // Gets tracklist.
-    void getTracklist(final Handler uiHandler) {
+    void getTracklist() {
         Thread thread = new Thread() {
             public void run() {
                 // Send tracklist command to Beefmote
@@ -157,7 +171,6 @@ public class BeefmoteServer {
 
                 // ... and get results
                 String inputLine = null;
-                ArrayList<String> trackBuffer = new ArrayList<>(TRACKLIST_BATCH_SIZE);
 
                 while(true) {
                     try {
@@ -168,39 +181,23 @@ public class BeefmoteServer {
                         e.printStackTrace();
                     }
 
-                    if (inputLine.startsWith("[BEEFMOTE_TRACKLIST_BEGIN]")) {
-                        // Send buffer and reset it
+                    if (inputLine.startsWith(BEEFMOTE_TRACKLIST_BEGIN)) {
                         trackBuffer.add(inputLine);
-                        Message msg = new Message();
-                        Bundle bundle = new Bundle();
-                        bundle.putStringArrayList(TRACKLIST_DATA, trackBuffer);
-                        msg.setData(bundle);
-                        msg.what = MESSAGE_TRACKLIST_BATCH_READY;
-                        uiHandler.sendMessage(msg);
+                        notifyTracklistListeners();
                         trackBuffer = new ArrayList<>();
 
                         continue;
                     }
 
-                    if (inputLine.equals("[BEEFMOTE_TRACKLIST_END]")) {
+                    if (inputLine.equals(BEEFMOTE_TRACKLIST_END)) {
                         if (trackBuffer.size() > 0) {
-                            // Send buffer
-                            Message msg = new Message();
-                            Bundle bundle = new Bundle();
-                            bundle.putStringArrayList(TRACKLIST_DATA, trackBuffer);
-                            msg.setData(bundle);
-                            msg.what = MESSAGE_TRACKLIST_BATCH_READY;
-                            uiHandler.sendMessage(msg);
+                            // Send last batch
+                            notifyTracklistListeners();
 
                             // Send the end message itself
                             trackBuffer = new ArrayList<>();
                             trackBuffer.add(inputLine);
-                            msg = new Message();
-                            bundle = new Bundle();
-                            bundle.putStringArrayList(TRACKLIST_DATA, trackBuffer);
-                            msg.setData(bundle);
-                            msg.what = MESSAGE_TRACKLIST_BATCH_READY;
-                            uiHandler.sendMessage(msg);
+                            notifyTracklistListeners();
 
                             break;
                         }
@@ -208,26 +205,17 @@ public class BeefmoteServer {
                             // Send the end message itself
                             trackBuffer = new ArrayList<>();
                             trackBuffer.add(inputLine);
-                            Message msg = new Message();
-                            Bundle bundle = new Bundle();
-                            bundle.putStringArrayList(TRACKLIST_DATA, trackBuffer);
-                            msg.setData(bundle);
-                            msg.what = MESSAGE_TRACKLIST_BATCH_READY;
-                            uiHandler.sendMessage(msg);
+
+                            notifyTracklistListeners();
                         }
                     }
 
-                    if (inputLine.startsWith("[BEEFMOTE_TRACKLIST_TRACK]")) {
-                        trackBuffer.add(inputLine.replace("[BEEFMOTE_TRACKLIST_TRACK] ", ""));
+                    if (inputLine.startsWith(BEEFMOTE_TRACKLIST_TRACK)) {
+                        trackBuffer.add(inputLine.replace(BEEFMOTE_TRACKLIST_TRACK + " ", ""));
 
                         if (trackBuffer.size() == TRACKLIST_BATCH_SIZE) {
                             // Send buffer and reset it
-                            Message msg = new Message();
-                            Bundle bundle = new Bundle();
-                            bundle.putStringArrayList(TRACKLIST_DATA, trackBuffer);
-                            msg.setData(bundle);
-                            msg.what = MESSAGE_TRACKLIST_BATCH_READY;
-                            uiHandler.sendMessage(msg);
+                            notifyTracklistListeners();
                             trackBuffer = new ArrayList<>();
                         }
                     }
@@ -282,7 +270,7 @@ public class BeefmoteServer {
         sendCommand(BEEFMOTE_SEEK_BACKWARD);
     }
 
-    void setNotifyNowPlaying(final boolean notifyNowPlaying, final Handler uiHandler) {
+    void setNotifyNowPlaying(final boolean notifyNowPlaying) {
         this.notifyNowPlaying = notifyNowPlaying;
 
         if (notifyNowPlaying && nowPlayingThread != null) {
@@ -312,7 +300,6 @@ public class BeefmoteServer {
                 }
 
                 if (!notifyNowPlaying) {
-                    System.out.println("Returning from Thread's run()");
                     return;
                 }
 
@@ -328,14 +315,9 @@ public class BeefmoteServer {
                         e.printStackTrace();
                     }
 
-                    if (inputLine.startsWith("[BEEFMOTE_NOW_PLAYING]")) {
-                        // Send buffer and clear it
-                        Message msg = new Message();
-                        Bundle bundle = new Bundle();
-                        bundle.putString(NOW_PLAYING_DATA, inputLine.replace("[BEEFMOTE_NOW_PLAYING] ", ""));
-                        msg.setData(bundle);
-                        msg.what = MESSAGE_NOW_PLAYING;
-                        uiHandler.sendMessage(msg);
+                    if (inputLine.startsWith(BEEFMOTE_NOW_PLAYING)) {
+                        nowPlayingStr = inputLine.replace(BEEFMOTE_NOW_PLAYING + " ", "");
+                        notifyNowPlayingListeners();
                     }
                 }
             }
@@ -359,5 +341,51 @@ public class BeefmoteServer {
 
     void exit() {
         sendCommand(BEEFMOTE_EXIT);
+    }
+
+    // TracklistEmitter interface
+    @Override
+    public void addTracklistListener(TracklistListener listener) {
+        tracklistListeners.add(listener);
+    }
+
+    @Override
+    public void removeTracklistListener(TracklistListener listener) {
+        tracklistListeners.remove(listener);
+    }
+
+    @Override
+    public void notifyTracklistListeners() {
+        for (TracklistListener listener : tracklistListeners) {
+            Message msg = new Message();
+            Bundle bundle = new Bundle();
+            bundle.putStringArrayList(TRACKLIST_DATA, trackBuffer);
+            msg.setData(bundle);
+            msg.what = MESSAGE_TRACKLIST_BATCH_READY;
+            listener.sendMessage(msg);
+        }
+    }
+
+    // NowPlayingEmitter interface
+    @Override
+    public void addNowPlayingListener(NowPlayingListener listener) {
+        nowPlayingListeners.add(listener);
+    }
+
+    @Override
+    public void removeNowPlayingListener(NowPlayingListener listener) {
+        nowPlayingListeners.remove(listener);
+    }
+
+    @Override
+    public void notifyNowPlayingListeners() {
+        for (NowPlayingListener listener : nowPlayingListeners) {
+            Message msg = new Message();
+            Bundle bundle = new Bundle();
+            bundle.putString(NOW_PLAYING_DATA, nowPlayingStr);
+            msg.setData(bundle);
+            msg.what = MESSAGE_NOW_PLAYING;
+            listener.sendMessage(msg);
+        }
     }
 }
