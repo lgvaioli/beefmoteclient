@@ -22,9 +22,6 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 
 public class PlaylistActivity extends AppCompatActivity implements PlaylistRecyclerViewAdapter.ItemClickListener {
-    private BeefmoteServer beefmoteServer;
-    private static final String SERVER_DEFAULT_IP = "192.168.0.2";
-    private static final int SERVER_DEFAULT_PORT = 49160;
     private ArrayList<Track> tracklist;
     private RecyclerView playlistRecycler;
     private PlaylistRecyclerViewAdapter playlistAdapter;
@@ -35,23 +32,23 @@ public class PlaylistActivity extends AppCompatActivity implements PlaylistRecyc
                 public boolean onNavigationItemSelected(@NonNull MenuItem menuItem) {
                     switch(menuItem.getItemId()) {
                         case R.id.nav_stop:
-                            beefmoteServer.stop();
+                            BeefmoteServer.get().stop();
                             break;
 
                         case R.id.nav_play:
-                            beefmoteServer.play();
+                            BeefmoteServer.get().play();
                             break;
 
                         case R.id.nav_pause:
-                            beefmoteServer.playResume();
+                            BeefmoteServer.get().playResume();
                             break;
 
                         case R.id.nav_previous:
-                            beefmoteServer.previous();
+                            BeefmoteServer.get().previous();
                             break;
 
                         case R.id.nav_next:
-                            beefmoteServer.next();
+                            BeefmoteServer.get().next();
                             break;
                     }
 
@@ -86,7 +83,7 @@ public class PlaylistActivity extends AppCompatActivity implements PlaylistRecyc
             // Last call: end == true
             if (end) {
                 // FIXME: hack. Fix BeefmoteServer's race conditions or whatever.
-                activity.getBeefmoteServer().setNotifyNowPlaying(true);
+                BeefmoteServer.get().setNotifyNowPlaying(true);
                 activity.setTracklistNum(-1);
 
                 // Hide progress bar
@@ -161,6 +158,14 @@ public class PlaylistActivity extends AppCompatActivity implements PlaylistRecyc
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_playlist);
 
+        // If server isn't connected, show toast message and return
+        if (!BeefmoteServer.get().isConnected()) {
+            Toast.makeText(this, getResources().getString(R.string.serverCouldNotConnect),
+                    Toast.LENGTH_LONG).show();
+            finish();
+            return;
+        }
+
         // Make all navigation buttons uncheckable
         BottomNavigationView nav = findViewById(R.id.navigation_view);
         nav.getMenu().setGroupCheckable(0, false, true);
@@ -175,50 +180,17 @@ public class PlaylistActivity extends AppCompatActivity implements PlaylistRecyc
         playlistAdapter.setClickListener(this);
         playlistRecycler.setAdapter(playlistAdapter);
 
-        Intent intent = getIntent();
-        String serverIpStr = intent.getStringExtra(MainActivity.SERVER_IP);
-        String serverPortStr = intent.getStringExtra(MainActivity.SERVER_PORT);
-
-        // This should never happen
-        if (serverIpStr == null || serverPortStr == null) {
-            finish();
-            return;
-        }
-
-        if (serverIpStr.equals(getResources().getString(R.string.serverIP))) {
-            serverIpStr = SERVER_DEFAULT_IP;
-        }
-
-        int serverPort;
-        if (serverPortStr.equals(getResources().getString(R.string.serverPort))) {
-            serverPort = SERVER_DEFAULT_PORT;
-        }
-        else {
-            serverPort = Integer.parseInt(serverPortStr);
-        }
-
-        // Create server and get track list
-        beefmoteServer = new BeefmoteServer(serverIpStr, serverPort);
-        if (!beefmoteServer.connect()) {
-            Toast.makeText(this, getResources().getString(R.string.serverCouldNotConnect), Toast.LENGTH_LONG).show();
-            finish();
-            return;
-        }
-
-        beefmoteServer.addTracklistListener(new PlaylistTracklistListener(this));
-        beefmoteServer.addNowPlayingListener(new PlaylistNowPlayingListener(this));
-        beefmoteServer.getTracklist();
-    }
-
-    BeefmoteServer getBeefmoteServer() {
-        return beefmoteServer;
+        // Add BeefmoteServer listeners and get tracklist
+        BeefmoteServer.get().addTracklistListener(new PlaylistTracklistListener(this));
+        BeefmoteServer.get().addNowPlayingListener(new PlaylistNowPlayingListener(this));
+        BeefmoteServer.get().getTracklist();
     }
 
     // Called when the user clicks a track
     @Override
     public void onItemClick(View view, int position) {
         Track track = playlistAdapter.getItem(position);
-        beefmoteServer.playTrack(track);
+        BeefmoteServer.get().playTrack(track);
     }
 
     // Setup SearchView
@@ -254,12 +226,12 @@ public class PlaylistActivity extends AppCompatActivity implements PlaylistRecyc
         switch (keyCode) {
             case KeyEvent.KEYCODE_VOLUME_UP:
                 if (action == KeyEvent.ACTION_DOWN) {
-                    beefmoteServer.volumeUp();
+                    BeefmoteServer.get().volumeUp();
                 }
                 return true;
             case KeyEvent.KEYCODE_VOLUME_DOWN:
                 if (action == KeyEvent.ACTION_DOWN) {
-                    beefmoteServer.volumeDown();
+                    BeefmoteServer.get().volumeDown();
                 }
                 return true;
             default:
@@ -270,15 +242,12 @@ public class PlaylistActivity extends AppCompatActivity implements PlaylistRecyc
     // Handle context menu selection
     @Override
     public boolean onContextItemSelected(@NonNull MenuItem item) {
-        switch(item.getItemId()) {
-            case PlaylistRecyclerViewAdapter.CONTEXT_MENU_ADD_TO_PLAYBACKQUEUE:
-                Track track = playlistAdapter.getItem(item.getGroupId());
-                beefmoteServer.addToPlaybackQueue(track);
-                return true;
-
-            default:
-                return super.onContextItemSelected(item);
+        if (item.getItemId() == PlaylistRecyclerViewAdapter.CONTEXT_MENU_ADD_TO_PLAYBACKQUEUE) {
+            Track track = playlistAdapter.getItem(item.getGroupId());
+            BeefmoteServer.get().addToPlaybackQueue(track);
+            return true;
         }
+        return super.onContextItemSelected(item);
     }
 
     // The following private methods are meant to be used by the private static listeners.

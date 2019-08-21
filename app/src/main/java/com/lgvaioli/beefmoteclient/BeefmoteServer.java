@@ -1,7 +1,6 @@
 package com.lgvaioli.beefmoteclient;
 
 import android.os.Bundle;
-import android.os.Handler;
 import android.os.Message;
 
 import java.io.BufferedReader;
@@ -12,17 +11,16 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 
 // FIXME REIMPLEMENT THIS USING THE ACTOR PATTERN
 public class BeefmoteServer implements TracklistEmitter, NowPlayingEmitter {
+    private static final BeefmoteServer singleton = new BeefmoteServer();
     private Socket socket;
     private BufferedReader bufferedReader;
-    private String serverIp;
-    private int serverPort;
-    private boolean stopAfterCurrent;
-    private boolean notifyNowPlaying;
+    private boolean connected;
+//    private boolean stopAfterCurrent;
+//    private boolean notifyNowPlaying;
     private Thread nowPlayingThread;
     private final int TRACKLIST_BATCH_SIZE = 100;
     private ArrayList<String> trackBuffer;
@@ -34,51 +32,52 @@ public class BeefmoteServer implements TracklistEmitter, NowPlayingEmitter {
     private static final String BEEFMOTE_TRACKLIST = "tla";
     private static final String BEEFMOTE_PLAY = "pp";
     private static final String BEEFMOTE_PLAYTRACK = "pa";
-    private static final String BEEFMOTE_RANDOM = "r";
+//    private static final String BEEFMOTE_RANDOM = "r";
     private static final String BEEFMOTE_PLAY_RESUME = "p";
-    private static final String BEEFMOTE_STOP_AFTER_CURRENT = "sac";
+//    private static final String BEEFMOTE_STOP_AFTER_CURRENT = "sac";
     private static final String BEEFMOTE_STOP = "s";
     private static final String BEEFMOTE_PREVIOUS = "pv";
     private static final String BEEFMOTE_NEXT = "nt";
     private static final String BEEFMOTE_VOLUME_UP = "vu";
     private static final String BEEFMOTE_VOLUME_DOWN = "vd";
-    private static final String BEEFMOTE_SEEK_FORWARD = "sf";
-    private static final String BEEFMOTE_SEEK_BACKWARD = "sb";
+//    private static final String BEEFMOTE_SEEK_FORWARD = "sf";
+//    private static final String BEEFMOTE_SEEK_BACKWARD = "sb";
     private static final String BEEFMOTE_ADD_PLAYBACKQUEUE_ADDRESS = "apa";
     private static final String BEEFMOTE_NOTIFY_NOW_PLAYING = "ntfy-nowplaying";
-    private static final String BEEFMOTE_EXIT = "exit";
+//    private static final String BEEFMOTE_EXIT = "exit";
 
     // Beefmote command markers
     static final String BEEFMOTE_TRACKLIST_BEGIN = "[BEEFMOTE_TRACKLIST_BEGIN]";
     static final String BEEFMOTE_TRACKLIST_END = "[BEEFMOTE_TRACKLIST_END]";
-    static final String BEEFMOTE_TRACKLIST_TRACK = "[BEEFMOTE_TRACKLIST_TRACK]";
-    static final String BEEFMOTE_NOW_PLAYING = "[BEEFMOTE_NOW_PLAYING]";
+    private static final String BEEFMOTE_TRACKLIST_TRACK = "[BEEFMOTE_TRACKLIST_TRACK]";
+    private static final String BEEFMOTE_NOW_PLAYING = "[BEEFMOTE_NOW_PLAYING]";
 
 
     // Beefmote messages
     static final int MESSAGE_TRACKLIST_BATCH_READY = 0;
-    static final int MESSAGE_PLAYLISTS_READY = 1;
-    static final int MESSAGE_CURRENT_PLAYLIST_READY = 2;
-    static final int MESSAGE_SEARCH_READY = 3;
+//    static final int MESSAGE_PLAYLISTS_READY = 1;
+//    static final int MESSAGE_CURRENT_PLAYLIST_READY = 2;
+//    static final int MESSAGE_SEARCH_READY = 3;
     static final int MESSAGE_NOW_PLAYING = 4;
 
     // Dummy strings for storing/extracting data from a Bundle
     static final String TRACKLIST_DATA = "TRACKLIST_DATA";
     static final String NOW_PLAYING_DATA = "NOW_PLAYING_DATA";
 
-    BeefmoteServer(String serverIp, int serverPort) {
-        this.serverIp = serverIp;
-        this.serverPort = serverPort;
-        stopAfterCurrent = false;
-        notifyNowPlaying = false;
+    // Enforce singleton
+    private BeefmoteServer() {
+//        stopAfterCurrent = false;
+//        notifyNowPlaying = false;
+        connected = false;
         nowPlayingThread = null;
         trackBuffer = new ArrayList<>(TRACKLIST_BATCH_SIZE);
         tracklistListeners = new ArrayList<>();
         nowPlayingListeners = new ArrayList<>();
     }
 
-    static public int nowPlayingStrToInt(String nowPlaying) {
-        return Integer.parseInt(nowPlaying.split(" ")[1]);
+    // Get singleton
+    static BeefmoteServer get() {
+        return singleton;
     }
 
     // Helper function for sending Beefmote commands (cuts down the Thread'ing boilerplate)
@@ -98,37 +97,41 @@ public class BeefmoteServer implements TracklistEmitter, NowPlayingEmitter {
         }.start();
     }
 
-    public boolean getStopAfterCurrent() {
-        return stopAfterCurrent;
-    }
+//    public boolean getStopAfterCurrent() {
+//        return stopAfterCurrent;
+//    }
+//
+//    public void setStopAfterCurrent(boolean stopAfterCurrent) {
+//        this.stopAfterCurrent = stopAfterCurrent;
+//        sendCommand(BEEFMOTE_STOP_AFTER_CURRENT);
+//    }
 
-    public void setStopAfterCurrent(boolean stopAfterCurrent) {
-        this.stopAfterCurrent = stopAfterCurrent;
-        sendCommand(BEEFMOTE_STOP_AFTER_CURRENT);
+    boolean isConnected() {
+        return connected;
     }
 
     // Connects to the Beefmote server. This function is blocking, i.e. it won't return
     // until the connection is established. Returns true if connection was established,
     // false otherwise.
-    boolean connect() {
+    boolean connect(final String serverIp, final int serverPort) {
         Thread thread = new Thread() {
             public void run() {
                 try {
                     InetAddress serverAddress = InetAddress.getByName(serverIp);
                     socket = new Socket(serverAddress, serverPort);
-                } catch (UnknownHostException ex) {
-                    ex.printStackTrace();
                 } catch (IOException ex) {
                     ex.printStackTrace();
                 }
 
-                    if (socket != null) {
-                        try {
-                            bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
+                if (socket != null) {
+                    connected = true;
+
+                    try {
+                        bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                    } catch (IOException e) {
+                        e.printStackTrace();
                     }
+                }
             }
         };
 
@@ -143,17 +146,17 @@ public class BeefmoteServer implements TracklistEmitter, NowPlayingEmitter {
         return socket != null;
     }
 
-    void disconnect() {
-        new Thread() {
-            public void run() {
-                try {
-                    socket.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }.start();
-    }
+//    void disconnect() {
+//        new Thread() {
+//            public void run() {
+//                try {
+//                    socket.close();
+//                } catch (IOException e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//        }.start();
+//    }
 
     // Gets tracklist.
     void getTracklist() {
@@ -179,6 +182,10 @@ public class BeefmoteServer implements TracklistEmitter, NowPlayingEmitter {
                         }
                     } catch (IOException e) {
                         e.printStackTrace();
+                    }
+
+                    if (inputLine == null) {
+                        continue;
                     }
 
                     if (inputLine.startsWith(BEEFMOTE_TRACKLIST_BEGIN)) {
@@ -234,9 +241,9 @@ public class BeefmoteServer implements TracklistEmitter, NowPlayingEmitter {
         sendCommand(BEEFMOTE_PLAYTRACK + " " + track.getAddress());
     }
 
-    void playRandom() {
-        sendCommand(BEEFMOTE_RANDOM);
-    }
+//    void playRandom() {
+//        sendCommand(BEEFMOTE_RANDOM);
+//    }
 
     void playResume() {
         sendCommand(BEEFMOTE_PLAY_RESUME);
@@ -262,16 +269,16 @@ public class BeefmoteServer implements TracklistEmitter, NowPlayingEmitter {
         sendCommand(BEEFMOTE_VOLUME_DOWN);
     }
 
-    void seekForward() {
-        sendCommand(BEEFMOTE_SEEK_FORWARD);
-    }
-
-    void seekBackward() {
-        sendCommand(BEEFMOTE_SEEK_BACKWARD);
-    }
+//    void seekForward() {
+//        sendCommand(BEEFMOTE_SEEK_FORWARD);
+//    }
+//
+//    void seekBackward() {
+//        sendCommand(BEEFMOTE_SEEK_BACKWARD);
+//    }
 
     void setNotifyNowPlaying(final boolean notifyNowPlaying) {
-        this.notifyNowPlaying = notifyNowPlaying;
+//        this.notifyNowPlaying = notifyNowPlaying;
 
         if (notifyNowPlaying && nowPlayingThread != null) {
             System.out.println("Notification true and thread running, returning");
@@ -315,6 +322,10 @@ public class BeefmoteServer implements TracklistEmitter, NowPlayingEmitter {
                         e.printStackTrace();
                     }
 
+                    if (inputLine == null) {
+                        continue;
+                    }
+
                     if (inputLine.startsWith(BEEFMOTE_NOW_PLAYING)) {
                         nowPlayingStr = inputLine.replace(BEEFMOTE_NOW_PLAYING + " ", "");
                         notifyNowPlayingListeners();
@@ -331,17 +342,17 @@ public class BeefmoteServer implements TracklistEmitter, NowPlayingEmitter {
         }
     }
 
-    boolean getNotifyNowPlaying() {
-        return notifyNowPlaying;
-    }
+//    boolean getNotifyNowPlaying() {
+//        return notifyNowPlaying;
+//    }
 
     void addToPlaybackQueue(Track track) {
         sendCommand(BEEFMOTE_ADD_PLAYBACKQUEUE_ADDRESS + " " + track.getAddress());
     }
 
-    void exit() {
-        sendCommand(BEEFMOTE_EXIT);
-    }
+//    void exit() {
+//        sendCommand(BEEFMOTE_EXIT);
+//    }
 
     // TracklistEmitter interface
     @Override

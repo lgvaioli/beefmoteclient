@@ -1,5 +1,7 @@
 package com.lgvaioli.beefmoteclient;
 
+import androidx.annotation.NonNull;
+
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -17,51 +19,55 @@ public class Track {
     // (trackIdx) address [artist - album] number - title (duration)
     Track(String beefmoteTrack) {
         // Is there anything on this Earth more unreadable than a regex?
-        String patternStr = "\\((.*?)\\) (.*?) \\[(.*?) - (.*?)\\] (.*?) - (.*?) \\((\\d+:\\d+)\\)";
+        String patternStr = "\\((.*?)\\) (.*?) \\[(.*?) - (.*?)] (.*?) - (.*?) \\((\\d+:\\d+)\\)";
         Pattern pattern = Pattern.compile(patternStr);
         Matcher matcher = pattern.matcher(beefmoteTrack);
 
         if (matcher.find()) {
-            playlistIndex = Integer.parseInt(matcher.group(1));
-            address = matcher.group(2);
-            artist = matcher.group(3);
-            album = matcher.group(4);
-            number = matcher.group(5);
-            title = matcher.group(6);
-            duration = matcher.group(7);
+            String matched = matcher.group(1);
+
+            if (matched != null) {
+                playlistIndex = Integer.parseInt(matched);
+                address = matcher.group(2);
+                artist = matcher.group(3);
+                album = matcher.group(4);
+                number = matcher.group(5);
+                title = matcher.group(6);
+                duration = matcher.group(7);
+            }
         }
     }
 
-    public int getPlaylistIndex() {
-        return playlistIndex;
-    }
+//    public int getPlaylistIndex() {
+//        return playlistIndex;
+//    }
 
-    public String getAddress() {
+    String getAddress() {
         return address;
     }
 
-    public String getArtist() {
+    String getArtist() {
         return artist;
     }
 
-    public String getAlbum() {
+    String getAlbum() {
         return album;
     }
 
-    public String getNumber() {
-        return number;
-    }
+//    String getNumber() {
+//        return number;
+//    }
 
-    public String getTitle() {
+    String getTitle() {
         return title;
     }
 
-    public String getDuration() {
-        return duration;
-    }
+//    String getDuration() {
+//        return duration;
+//    }
 
     @Override
-    public String toString() {
+    @NonNull public String toString() {
         return artist + " - " + title;
     }
 

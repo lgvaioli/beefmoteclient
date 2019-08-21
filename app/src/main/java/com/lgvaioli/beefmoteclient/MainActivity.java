@@ -6,10 +6,11 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity {
-    public static final String SERVER_IP = "SERVER_IP";
-    public static final String SERVER_PORT = "SERVER_PORT";
+    private static final String SERVER_DEFAULT_IP = "192.168.0.2";
+    private static final int SERVER_DEFAULT_PORT = 49160;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -28,9 +29,23 @@ public class MainActivity extends AppCompatActivity {
         EditText editText_serverPort = findViewById(R.id.serverPort);
         String serverPortStr = editText_serverPort.getText().toString();
 
-        // Pack server IP and port strings into the Intent
-        intent.putExtra(SERVER_IP, serverIpStr);
-        intent.putExtra(SERVER_PORT, serverPortStr);
+        if (serverIpStr.equals(getResources().getString(R.string.serverIP))) {
+            serverIpStr = SERVER_DEFAULT_IP;
+        }
+
+        int serverPort;
+        if (serverPortStr.equals(getResources().getString(R.string.serverPort))) {
+            serverPort = SERVER_DEFAULT_PORT;
+        }
+        else {
+            serverPort = Integer.parseInt(serverPortStr);
+        }
+
+        if (!BeefmoteServer.get().connect(serverIpStr, serverPort)) {
+            Toast.makeText(this, getResources().getString(R.string.serverCouldNotConnect),
+                    Toast.LENGTH_LONG).show();
+            return;
+        }
 
         startActivity(intent);
     }
