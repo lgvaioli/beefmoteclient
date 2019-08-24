@@ -13,8 +13,7 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.util.ArrayList;
 
-// FIXME REIMPLEMENT THIS USING THE ACTOR PATTERN
-public class BeefmoteServer implements TracklistEmitter, NowPlayingEmitter {
+public class BeefmoteServer implements TracklistEmitter, NowPlayingEmitter, ConnectionEmitter {
     private static final BeefmoteServer singleton = new BeefmoteServer();
     private Socket socket;
     private BufferedReader bufferedReader;
@@ -27,6 +26,8 @@ public class BeefmoteServer implements TracklistEmitter, NowPlayingEmitter {
     private ArrayList<TracklistListener> tracklistListeners;
     private String nowPlayingStr;
     private ArrayList<NowPlayingListener> nowPlayingListeners;
+    private ArrayList<ConnectionListener> connectionListeners;
+    private String connectionStr;
 
     // Beefmote commands
     private static final String BEEFMOTE_TRACKLIST = "tla";
@@ -59,10 +60,17 @@ public class BeefmoteServer implements TracklistEmitter, NowPlayingEmitter {
 //    static final int MESSAGE_CURRENT_PLAYLIST_READY = 2;
 //    static final int MESSAGE_SEARCH_READY = 3;
     static final int MESSAGE_NOW_PLAYING = 4;
+    static final int MESSAGE_CONNECTION = 5;
 
     // Dummy strings for storing/extracting data from a Bundle
     static final String TRACKLIST_DATA = "TRACKLIST_DATA";
     static final String NOW_PLAYING_DATA = "NOW_PLAYING_DATA";
+    static final String CONNECTION_DATA = "CONNECTION_DATA";
+
+    // Strings for connection handling
+    static final String CONNECTION_START = "CONNECTION_START";
+    static final String CONNECTION_SUCCESS = "CONNECTION_SUCCESS";
+    static final String CONNECTION_FAILURE = "CONNECTION_FAILURE";
 
     // Enforce singleton
     private BeefmoteServer() {
@@ -73,6 +81,7 @@ public class BeefmoteServer implements TracklistEmitter, NowPlayingEmitter {
         trackBuffer = new ArrayList<>(TRACKLIST_BATCH_SIZE);
         tracklistListeners = new ArrayList<>();
         nowPlayingListeners = new ArrayList<>();
+        connectionListeners = new ArrayList<>();
     }
 
     // Get singleton
@@ -110,12 +119,13 @@ public class BeefmoteServer implements TracklistEmitter, NowPlayingEmitter {
         return connected;
     }
 
-    // Connects to the Beefmote server. This function is blocking, i.e. it won't return
-    // until the connection is established. Returns true if connection was established,
-    // false otherwise.
-    boolean connect(final String serverIp, final int serverPort) {
+    // Connects to the Beefmote server.
+    void connect(final String serverIp, final int serverPort) {
         Thread thread = new Thread() {
             public void run() {
+                connectionStr = CONNECTION_START;
+                notifyConnectionListeners();
+
                 try {
                     InetAddress serverAddress = InetAddress.getByName(serverIp);
                     socket = new Socket(serverAddress, serverPort);
@@ -131,19 +141,18 @@ public class BeefmoteServer implements TracklistEmitter, NowPlayingEmitter {
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
+
+                    connectionStr = CONNECTION_SUCCESS;
+                    notifyConnectionListeners();
+                }
+                else {
+                    connectionStr = CONNECTION_FAILURE;
+                    notifyConnectionListeners();
                 }
             }
         };
 
         thread.start();
-
-        try {
-            thread.join();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        return socket != null;
     }
 
 //    void disconnect() {
@@ -396,6 +405,29 @@ public class BeefmoteServer implements TracklistEmitter, NowPlayingEmitter {
             bundle.putString(NOW_PLAYING_DATA, nowPlayingStr);
             msg.setData(bundle);
             msg.what = MESSAGE_NOW_PLAYING;
+            listener.sendMessage(msg);
+        }
+    }
+
+    // ConnectionEmitter interface
+    @Override
+    public void addConnectionListener(ConnectionListener listener) {
+        connectionListeners.add(listener);
+    }
+
+    @Override
+    public void removeConnectionListener(ConnectionListener listener) {
+        connectionListeners.remove(listener);
+    }
+
+    @Override
+    public void notifyConnectionListeners() {
+        for (ConnectionListener listener : connectionListeners) {
+            Message msg = new Message();
+            Bundle bundle = new Bundle();
+            bundle.putString(CONNECTION_DATA, connectionStr);
+            msg.setData(bundle);
+            msg.what = MESSAGE_CONNECTION;
             listener.sendMessage(msg);
         }
     }
